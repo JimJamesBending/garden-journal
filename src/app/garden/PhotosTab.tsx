@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { CldUploadWidget } from "next-cloudinary";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 interface PlantOption {
   id: string;
@@ -26,12 +25,16 @@ interface LogEntry {
   labeled: boolean;
 }
 
+const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "davterbwx";
+
 export function PhotosTab({ password }: { password: string }) {
   const [plants, setPlants] = useState<PlantOption[]>([]);
   const [pendingPhotos, setPendingPhotos] = useState<PendingPhoto[]>([]);
   const [recentLogs, setRecentLogs] = useState<LogEntry[]>([]);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadData = useCallback(async () => {
     const [plantsRes, logsRes] = await Promise.all([
@@ -46,18 +49,47 @@ export function PhotosTab({ password }: { password: string }) {
     loadData();
   }, [loadData]);
 
-  const handleUploadSuccess = (result: unknown) => {
-    const r = result as { info?: { secure_url?: string } };
-    if (r?.info?.secure_url) {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    setMessage("");
+
+    try {
+      const uploads = Array.from(files).map(async (file) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", "garden_log");
+
+        const res = await fetch(
+          `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+          { method: "POST", body: formData }
+        );
+
+        if (!res.ok) throw new Error("Upload failed");
+        const data = await res.json();
+        return data.secure_url as string;
+      });
+
+      const urls = await Promise.all(uploads);
+
       setPendingPhotos((prev) => [
         ...prev,
-        {
-          url: r.info!.secure_url!,
+        ...urls.map((url) => ({
+          url,
           plantId: "",
           caption: "",
           status: "sowed",
-        },
+        })),
       ]);
+
+      setMessage(`Uploaded ${urls.length} photo(s)`);
+    } catch {
+      setMessage("Upload failed — try again");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -116,27 +148,23 @@ export function PhotosTab({ password }: { password: string }) {
     <div>
       {/* Upload button */}
       <div className="mb-6">
-        <CldUploadWidget
-          uploadPreset="garden_log"
-          options={{
-            multiple: true,
-            maxFiles: 10,
-            resourceType: "image",
-            sources: ["local", "camera"],
-            showPoweredBy: false,
-          }}
-          onSuccess={handleUploadSuccess}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          capture="environment"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="w-full bg-moss-700 hover:bg-moss-600 active:bg-moss-800 disabled:bg-moss-800 text-parchment-200 font-mono text-base py-5 rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-3"
         >
-          {({ open }) => (
-            <button
-              onClick={() => open()}
-              className="w-full bg-moss-700 hover:bg-moss-600 active:bg-moss-800 text-parchment-200 font-mono text-base py-5 rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-3"
-            >
-              <span className="text-2xl">{"\u{1F4F7}"}</span>
-              Upload Photos
-            </button>
-          )}
-        </CldUploadWidget>
+          <span className="text-2xl">{"\u{1F4F7}"}</span>
+          {uploading ? "Uploading..." : "Upload Photos"}
+        </button>
       </div>
 
       {/* Pending photos — tag before saving */}
