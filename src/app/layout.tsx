@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Lora, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -27,6 +27,19 @@ export const metadata: Metadata = {
   title: "Garden Journal — Bristol 2025",
   description:
     "Tracking seedlings from sowing to harvest. A living photo log of what grows in Bristol.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Garden",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a1f0a",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({
@@ -36,6 +49,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+      </head>
       <body
         className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable} font-body antialiased`}
       >
@@ -58,10 +74,10 @@ export default function RootLayout({
                   Plants
                 </a>
                 <a
-                  href="/log/new"
+                  href="/garden"
                   className="hover:text-parchment-300 transition-colors"
                 >
-                  + Log
+                  Portal
                 </a>
               </div>
             </nav>

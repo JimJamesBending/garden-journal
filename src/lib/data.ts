@@ -1,40 +1,56 @@
 import { Plant, LogEntry } from "./types";
-import plantsData from "../../data/plants.json";
-import logsData from "../../data/logs.json";
+import {
+  getPlants as getBlobPlants,
+  getLogs as getBlobLogs,
+} from "./blob";
 
-export function getPlants(): Plant[] {
-  return plantsData as Plant[];
+export async function getPlants(): Promise<Plant[]> {
+  return getBlobPlants();
 }
 
-export function getPlantBySlug(slug: string): Plant | undefined {
-  return (plantsData as Plant[]).find((p) => p.slug === slug);
+export async function getPlantBySlug(
+  slug: string
+): Promise<Plant | undefined> {
+  const plants = await getBlobPlants();
+  return plants.find((p) => p.slug === slug);
 }
 
-export function getLogs(): LogEntry[] {
-  return logsData as LogEntry[];
+export async function getLogs(): Promise<LogEntry[]> {
+  return getBlobLogs();
 }
 
-export function getLogsForPlant(plantId: string): LogEntry[] {
-  return (logsData as LogEntry[])
+export async function getLogsForPlant(
+  plantId: string
+): Promise<LogEntry[]> {
+  const logs = await getBlobLogs();
+  return logs
     .filter((l) => l.plantId === plantId)
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    .sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
 }
 
-export function getLatestLog(plantId: string): LogEntry | undefined {
-  const logs = getLogsForPlant(plantId);
+export async function getLatestLog(
+  plantId: string
+): Promise<LogEntry | undefined> {
+  const logs = await getLogsForPlant(plantId);
   return logs.length > 0 ? logs[logs.length - 1] : undefined;
 }
 
 export function daysSince(dateStr: string): number {
   const sow = new Date(dateStr);
   const now = new Date();
-  return Math.floor((now.getTime() - sow.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.floor(
+    (now.getTime() - sow.getTime()) / (1000 * 60 * 60 * 24)
+  );
 }
 
-export function getLatestStatus(
+export async function getLatestStatus(
   plantId: string
-): "sowed" | "germinated" | "transplanted" | "flowering" | "harvested" {
-  const latest = getLatestLog(plantId);
+): Promise<
+  "sowed" | "germinated" | "transplanted" | "flowering" | "harvested"
+> {
+  const latest = await getLatestLog(plantId);
   return latest?.status ?? "sowed";
 }
 

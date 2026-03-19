@@ -18,7 +18,18 @@ export interface LogEntry {
   date: string;
   cloudinaryUrl: string;
   caption: string;
-  status: "sowed" | "germinated" | "transplanted" | "flowering" | "harvested";
+  status: PlantStatus;
+  labeled: boolean;
+}
+
+export interface GrowthEntry {
+  id: string;
+  plantId: string;
+  date: string;
+  heightCm: number | null;
+  leafCount: number | null;
+  healthScore: number | null;
+  notes: string;
 }
 
 export type PlantStatus =

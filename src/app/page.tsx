@@ -1,13 +1,19 @@
 import { getPlants, getLogs, getLatestLog } from "@/lib/data";
 import { PlantCard } from "@/components/PlantCard";
 
-export default function HomePage() {
-  const plants = getPlants();
-  const logs = getLogs();
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const [plants, logs] = await Promise.all([getPlants(), getLogs()]);
 
   const totalPlants = plants.length;
   const totalPhotos = logs.length;
   const categories = [...new Set(plants.map((p) => p.category))];
+
+  // Pre-fetch latest logs for each plant
+  const latestLogs = await Promise.all(
+    plants.map((p) => getLatestLog(p.id))
+  );
 
   return (
     <div>
@@ -59,11 +65,11 @@ export default function HomePage() {
 
       {/* Plant grid */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {plants.map((plant) => (
+        {plants.map((plant, i) => (
           <PlantCard
             key={plant.id}
             plant={plant}
-            latestLog={getLatestLog(plant.id)}
+            latestLog={latestLogs[i]}
           />
         ))}
       </section>

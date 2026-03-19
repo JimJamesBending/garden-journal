@@ -1,0 +1,21 @@
+{
+  "name": "Garden Journal",
+  "short_name": "Garden",
+  "description": "Track seedlings from sowing to harvest",
+  "start_url": "/garden",
+  "display": "standalone",
+  "background_color": "#0a1f0a",
+  "theme_color": "#0a1f0a",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

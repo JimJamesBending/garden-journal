@@ -11,9 +11,7 @@ import {
 import { PlantLogs } from "@/components/PlantLogs";
 import { StatusPill } from "@/components/StatusPill";
 
-export function generateStaticParams() {
-  return getPlants().map((plant) => ({ slug: plant.slug }));
-}
+export const dynamic = "force-dynamic";
 
 export default async function PlantPage({
   params,
@@ -21,12 +19,12 @@ export default async function PlantPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const plant = getPlantBySlug(slug);
+  const plant = await getPlantBySlug(slug);
   if (!plant) notFound();
 
-  const logs = getLogsForPlant(plant.id);
+  const logs = await getLogsForPlant(plant.id);
   const days = daysSince(plant.sowDate);
-  const status = getLatestStatus(plant.id);
+  const status = await getLatestStatus(plant.id);
   const emoji = getCategoryEmoji(plant.category);
 
   const sowDate = new Date(plant.sowDate).toLocaleDateString("en-GB", {
@@ -117,7 +115,7 @@ export default async function PlantPage({
             Photo Log
           </h3>
           <Link
-            href={`/log/new?plant=${plant.id}`}
+            href={`/garden`}
             className="font-mono text-xs text-moss-400 border border-moss-700/50 px-3 py-1.5 rounded hover:border-moss-500 hover:text-parchment-400 transition-colors"
           >
             + Add Photo
