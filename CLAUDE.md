@@ -3,8 +3,8 @@
 ## Project Overview
 A garden journal web app for tracking seedlings from sowing to harvest. Built with Next.js, deployed on Vercel, photos stored on Cloudinary, data stored in Vercel Blob.
 
-**Live site:** https://garden-journal-ashy.vercel.app/
-**Portal:** https://garden-journal-ashy.vercel.app/garden
+**Live site:** https://garden-project-theta.vercel.app/
+**Portal:** https://garden-project-theta.vercel.app/garden
 **GitHub:** https://github.com/JimJamesBending/garden-journal
 
 ## Stack
@@ -45,7 +45,7 @@ When Jim says "check my garden photos" or similar:
 
 1. Fetch unlabeled photos:
    ```
-   curl https://garden-journal-ashy.vercel.app/api/logs?unlabeled=true
+   curl https://garden-project-theta.vercel.app/api/logs?unlabeled=true
    ```
 
 2. For each entry with a `cloudinaryUrl`, view the image using WebFetch or Read tool
@@ -57,7 +57,7 @@ When Jim says "check my garden photos" or similar:
 
 4. Update each entry:
    ```
-   curl -X PUT https://garden-journal-ashy.vercel.app/api/logs/<id> \
+   curl -X PUT https://garden-project-theta.vercel.app/api/logs/<id> \
      -H "Content-Type: application/json" \
      -d '{"plantId": "<matched-plant-id>", "caption": "<description>", "status": "<status>", "password": "<password>"}'
    ```
