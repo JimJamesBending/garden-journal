@@ -14,7 +14,7 @@ async function readBlob<T>(key: string, fallback: T): Promise<T> {
   try {
     const { blobs } = await list({ prefix: key });
     if (blobs.length > 0) {
-      const res = await fetch(blobs[0].url);
+      const res = await fetch(blobs[0].url, { cache: "no-store" });
       return (await res.json()) as T;
     }
   } catch {
