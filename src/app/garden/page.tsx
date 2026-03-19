@@ -11,15 +11,18 @@ const PlantsTab = lazy(() =>
 const GrowthTab = lazy(() =>
   import("./GrowthTab").then((m) => ({ default: m.GrowthTab }))
 );
+const AdviceTab = lazy(() =>
+  import("./AdviceTab").then((m) => ({ default: m.AdviceTab }))
+);
 
-const TABS = ["Photos", "Plants", "Growth"] as const;
+const TABS = ["Advice", "Photos", "Plants", "Growth"] as const;
 type Tab = (typeof TABS)[number];
 
 export default function GardenPortal() {
   const [password, setPassword] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState<Tab>("Photos");
+  const [activeTab, setActiveTab] = useState<Tab>("Advice");
 
   const handleAuth = async () => {
     try {
@@ -41,50 +44,73 @@ export default function GardenPortal() {
 
   if (!authenticated) {
     return (
-      <div className="max-w-sm mx-auto pt-20">
-        <div className="text-center mb-8">
-          <h2 className="font-display text-4xl text-parchment-200 mb-2">
-            Garden Portal
-          </h2>
-          <p className="font-mono text-xs text-moss-500">
-            Manage your garden
-          </p>
-        </div>
-        <div className="bg-night-900/40 border border-moss-800/30 rounded-lg p-6">
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleAuth()}
-            className="w-full bg-night-950/80 border border-moss-800/50 rounded-lg px-4 py-3 text-parchment-300 font-body text-base focus:outline-none focus:border-moss-600 mb-4"
-            placeholder="Password"
-            autoFocus
-          />
-          {error && (
-            <p className="font-mono text-xs text-red-400 mb-4">{error}</p>
-          )}
-          <button
-            onClick={handleAuth}
-            className="w-full bg-moss-700 hover:bg-moss-600 text-parchment-200 font-mono text-sm py-3 rounded-lg transition-colors active:scale-95"
-          >
-            Enter
-          </button>
+      <div className="min-h-screen flex flex-col">
+        <div className="max-w-sm mx-auto pt-20 px-6">
+          <div className="text-center mb-8">
+            <span className="text-4xl block mb-3">{"\u{1F33F}"}</span>
+            <h2 className="font-display text-4xl text-parchment-200 mb-2">
+              Garden Portal
+            </h2>
+            <p className="font-mono text-xs text-moss-500">
+              Your AI gardening companion
+            </p>
+          </div>
+          <div className="bg-night-900/40 border border-moss-800/30 rounded-lg p-6">
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAuth()}
+              className="w-full bg-night-950/80 border border-moss-800/50 rounded-lg px-4 py-3 text-parchment-300 font-body text-base focus:outline-none focus:border-moss-600 mb-4"
+              placeholder="Password"
+              autoFocus
+            />
+            {error && (
+              <p className="font-mono text-xs text-red-400 mb-4">{error}</p>
+            )}
+            <button
+              onClick={handleAuth}
+              className="w-full bg-moss-700 hover:bg-moss-600 text-parchment-200 font-mono text-sm py-3 rounded-lg transition-colors active:scale-95"
+            >
+              Enter
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-lg mx-auto pb-20">
+    <div className="min-h-screen flex flex-col">
+      {/* Header */}
+      <div className="border-b border-moss-800/50 px-4 py-3 flex items-center justify-between">
+        <div>
+          <h1 className="font-display text-xl text-parchment-200">
+            Garden Portal
+          </h1>
+          <p className="font-mono text-[10px] text-moss-500 uppercase tracking-wider">
+            AI Gardener
+          </p>
+        </div>
+        <a
+          href="/"
+          className="font-mono text-xs text-moss-400 hover:text-parchment-300 transition-colors"
+        >
+          View Site {"\u{2192}"}
+        </a>
+      </div>
+
       {/* Tab content */}
-      <div className="mb-4">
+      <div className="flex-1 max-w-lg mx-auto w-full pb-20">
         <Suspense
           fallback={
-            <p className="font-mono text-xs text-moss-500 text-center py-12">
-              Loading...
-            </p>
+            <div className="py-12 text-center">
+              <div className="inline-block w-6 h-6 border-2 border-moss-600 border-t-parchment-400 rounded-full animate-spin" />
+              <p className="font-mono text-xs text-moss-500 mt-3">Loading...</p>
+            </div>
           }
         >
+          {activeTab === "Advice" && <AdviceTab password={password} />}
           {activeTab === "Photos" && <PhotosTab password={password} />}
           {activeTab === "Plants" && <PlantsTab password={password} />}
           {activeTab === "Growth" && <GrowthTab password={password} />}
@@ -98,23 +124,18 @@ export default function GardenPortal() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-4 text-center font-mono text-xs uppercase tracking-wider transition-colors active:scale-95 ${
+              className={`flex-1 py-3 text-center font-mono text-[10px] uppercase tracking-wider transition-colors active:scale-95 ${
                 activeTab === tab
                   ? "text-parchment-200 border-t-2 border-moss-500"
                   : "text-moss-600 hover:text-moss-400"
               }`}
             >
-              {tab === "Photos" && (
-                <span className="block text-lg mb-0.5">
-                  {activeTab === tab ? "\u{1F4F7}" : "\u{1F4F7}"}
-                </span>
-              )}
-              {tab === "Plants" && (
-                <span className="block text-lg mb-0.5">{"\u{1F331}"}</span>
-              )}
-              {tab === "Growth" && (
-                <span className="block text-lg mb-0.5">{"\u{1F4CF}"}</span>
-              )}
+              <span className="block text-lg mb-0.5">
+                {tab === "Advice" && "\u{1F33F}"}
+                {tab === "Photos" && "\u{1F4F7}"}
+                {tab === "Plants" && "\u{1F331}"}
+                {tab === "Growth" && "\u{1F4CF}"}
+              </span>
               {tab}
             </button>
           ))}
