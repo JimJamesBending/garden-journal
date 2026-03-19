@@ -24,6 +24,7 @@ async function writeBlob(key: string, data: unknown): Promise<void> {
     access: "public",
     contentType: "application/json",
     addRandomSuffix: false,
+    allowOverwrite: true,
   });
 }
 
