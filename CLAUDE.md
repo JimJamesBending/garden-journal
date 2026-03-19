@@ -35,7 +35,7 @@ A garden journal web app for tracking seedlings from sowing to harvest. Built wi
 - `POST /api/growth` — add growth measurement (fields: plantId, heightCm, leafCount, healthScore, notes)
 
 ### Auth
-- Password: set via `LOG_PASSWORD` env var on Vercel (default: `garden2025`)
+- Password: set via `LOG_PASSWORD` env var on Vercel (default: `2303`)
 - All write endpoints require `password` in the request body
 - All read endpoints are public
 

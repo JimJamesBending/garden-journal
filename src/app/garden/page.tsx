@@ -1,9 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { PhotosTab } from "./PhotosTab";
-import { PlantsTab } from "./PlantsTab";
-import { GrowthTab } from "./GrowthTab";
+import { useState, lazy, Suspense } from "react";
+
+const PhotosTab = lazy(() =>
+  import("./PhotosTab").then((m) => ({ default: m.PhotosTab }))
+);
+const PlantsTab = lazy(() =>
+  import("./PlantsTab").then((m) => ({ default: m.PlantsTab }))
+);
+const GrowthTab = lazy(() =>
+  import("./GrowthTab").then((m) => ({ default: m.GrowthTab }))
+);
 
 const TABS = ["Photos", "Plants", "Growth"] as const;
 type Tab = (typeof TABS)[number];
@@ -15,16 +22,20 @@ export default function GardenPortal() {
   const [activeTab, setActiveTab] = useState<Tab>("Photos");
 
   const handleAuth = async () => {
-    const res = await fetch("/api/auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
-    if (res.ok) {
-      setAuthenticated(true);
-      setError("");
-    } else {
-      setError("Wrong password");
+    try {
+      const res = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      if (res.ok) {
+        setAuthenticated(true);
+        setError("");
+      } else {
+        setError("Wrong password");
+      }
+    } catch {
+      setError("Connection failed — try again");
     }
   };
 
@@ -67,9 +78,17 @@ export default function GardenPortal() {
     <div className="max-w-lg mx-auto pb-20">
       {/* Tab content */}
       <div className="mb-4">
-        {activeTab === "Photos" && <PhotosTab password={password} />}
-        {activeTab === "Plants" && <PlantsTab password={password} />}
-        {activeTab === "Growth" && <GrowthTab password={password} />}
+        <Suspense
+          fallback={
+            <p className="font-mono text-xs text-moss-500 text-center py-12">
+              Loading...
+            </p>
+          }
+        >
+          {activeTab === "Photos" && <PhotosTab password={password} />}
+          {activeTab === "Plants" && <PlantsTab password={password} />}
+          {activeTab === "Growth" && <GrowthTab password={password} />}
+        </Suspense>
       </div>
 
       {/* Fixed bottom tab bar */}
