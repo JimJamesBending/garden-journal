@@ -35,6 +35,7 @@ export function PhotosTab({ password }: { password: string }) {
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const loadData = useCallback(async () => {
     const [plantsRes, logsRes] = await Promise.all([
@@ -146,8 +147,8 @@ export function PhotosTab({ password }: { password: string }) {
 
   return (
     <div>
-      {/* Upload button */}
-      <div className="mb-6">
+      {/* Upload buttons */}
+      <div className="mb-6 flex gap-3">
         <input
           ref={fileInputRef}
           type="file"
@@ -156,13 +157,29 @@ export function PhotosTab({ password }: { password: string }) {
           onChange={handleFileSelect}
           className="hidden"
         />
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="w-full bg-moss-700 hover:bg-moss-600 active:bg-moss-800 disabled:bg-moss-800 text-parchment-200 font-mono text-base py-5 rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-3"
+          className="flex-1 bg-moss-700 hover:bg-moss-600 active:bg-moss-800 disabled:bg-moss-800 text-parchment-200 font-mono text-sm py-5 rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
         >
-          <span className="text-2xl">{"\u{1F4F7}"}</span>
-          {uploading ? "Uploading..." : "Upload Photos"}
+          <span className="text-xl">{"\u{1F5BC}\uFE0F"}</span>
+          {uploading ? "Uploading..." : "Gallery"}
+        </button>
+        <button
+          onClick={() => cameraInputRef.current?.click()}
+          disabled={uploading}
+          className="flex-1 bg-moss-700 hover:bg-moss-600 active:bg-moss-800 disabled:bg-moss-800 text-parchment-200 font-mono text-sm py-5 rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+        >
+          <span className="text-xl">{"\u{1F4F7}"}</span>
+          {uploading ? "Uploading..." : "Camera"}
         </button>
       </div>
 
