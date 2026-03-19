@@ -153,7 +153,6 @@ export function PhotosTab({ password }: { password: string }) {
           type="file"
           accept="image/*"
           multiple
-          capture="environment"
           onChange={handleFileSelect}
           className="hidden"
         />
