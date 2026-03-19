@@ -3,21 +3,56 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #0a1f0a;
+  --foreground: #e8d5b0;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Subtle paper texture overlay */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23d4b87a'/%3E%3Crect width='1' height='1' fill='%23c4a05a'/%3E%3C/svg%3E");
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0a1f0a;
+}
+::-webkit-scrollbar-thumb {
+  background: #2d6b2d;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4a8a4a;
+}
+
+/* Status pill colours */
+.status-sowed {
+  @apply bg-earth-700 text-earth-200;
+}
+.status-germinated {
+  @apply bg-moss-700 text-moss-200;
+}
+.status-transplanted {
+  @apply bg-moss-600 text-moss-100;
+}
+.status-flowering {
+  @apply bg-parchment-700 text-parchment-200;
+}
+.status-harvested {
+  @apply bg-parchment-600 text-parchment-100;
 }
 
 @layer utilities {
