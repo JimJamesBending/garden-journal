@@ -84,8 +84,10 @@ async function processMessage(
 
   try {
     // 1. Resolve user (find or create)
+    console.log("Step 1: Resolving user", phone, profileName);
     const { gardenId, conversationId, isNew } =
       await resolveWhatsAppUser(supabase, phone, profileName);
+    console.log("Step 1 done:", { gardenId, conversationId, isNew });
 
     // 2. Extract text and media
     let textContent = "";
@@ -108,19 +110,24 @@ async function processMessage(
       );
       return;
     }
+    console.log("Step 2 done: text =", textContent);
 
     // 3. Save user message
     await saveMessage(supabase, conversationId, "user", textContent, imageUrls);
+    console.log("Step 3 done: message saved");
 
     // 4. Build garden context
     const context = await buildGardenContext(supabase, gardenId, conversationId);
+    console.log("Step 4 done: context built, plantCount =", context.plantCount);
 
     // 5. Ask Hazel
+    console.log("Step 5: Asking Hazel...");
     const hazelResponse = await askHazel({
       userMessage: textContent,
       imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
       gardenContext: context,
     });
+    console.log("Step 5 done: Hazel responded, length =", hazelResponse.text.length);
 
     // 6. Save identified plants
     if (hazelResponse.shouldSavePlants && hazelResponse.identifiedPlants.length > 0) {
