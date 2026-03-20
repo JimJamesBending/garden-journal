@@ -12,13 +12,24 @@ interface PhotoTimelineProps {
 
 function getStatusColor(status: string): string {
   const colors: Record<string, string> = {
-    sowed: "bg-earth-600",
-    germinated: "bg-moss-500",
-    transplanted: "bg-moss-400",
-    flowering: "bg-parchment-500",
-    harvested: "bg-parchment-400",
+    sowed: "bg-amber-400",
+    germinated: "bg-green-500",
+    transplanted: "bg-green-400",
+    flowering: "bg-pink-500",
+    harvested: "bg-orange-500",
   };
-  return colors[status] || "bg-moss-600";
+  return colors[status] || "bg-gray-400";
+}
+
+function getStatusBadgeColor(status: string): string {
+  const colors: Record<string, string> = {
+    sowed: "bg-amber-100 text-amber-800",
+    germinated: "bg-green-100 text-green-800",
+    transplanted: "bg-green-100 text-green-800",
+    flowering: "bg-pink-100 text-pink-800",
+    harvested: "bg-orange-100 text-orange-800",
+  };
+  return colors[status] || "bg-garden-greenLight text-garden-text";
 }
 
 export function PhotoTimeline({ logs, plants }: PhotoTimelineProps) {
@@ -46,13 +57,13 @@ export function PhotoTimeline({ logs, plants }: PhotoTimelineProps) {
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8 }}
         >
-          <span className="font-mono text-xs text-moss-500 uppercase tracking-[0.3em]">
+          <span className="font-sans text-base text-garden-textMuted uppercase tracking-[0.3em]">
             The Story So Far
           </span>
-          <h2 className="font-display text-5xl md:text-6xl font-light text-parchment-200 mt-3 mb-4">
+          <h2 className="font-sans font-bold text-5xl md:text-6xl text-garden-text mt-3 mb-4">
             Photo Journal
           </h2>
-          <p className="font-body text-parchment-500/70 max-w-md mx-auto">
+          <p className="font-sans text-garden-textMuted max-w-md mx-auto">
             Every snapshot tells a story of growth.
           </p>
         </motion.div>
@@ -60,7 +71,7 @@ export function PhotoTimeline({ logs, plants }: PhotoTimelineProps) {
         {/* Timeline */}
         <div className="relative">
           {/* Vertical line */}
-          <div className="absolute left-6 md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-moss-700/50 via-moss-600/30 to-transparent" />
+          <div className="absolute left-6 md:left-1/2 top-0 bottom-0 w-px bg-garden-border" />
 
           {labeledLogs.map((log, i) => {
             const isLeft = i % 2 === 0;
@@ -83,13 +94,13 @@ export function PhotoTimeline({ logs, plants }: PhotoTimelineProps) {
               >
                 {/* Timeline dot */}
                 <div
-                  className={`absolute left-[18px] md:left-1/2 md:-translate-x-1/2 w-4 h-4 rounded-full border-2 border-moss-800 ${getStatusColor(
+                  className={`absolute left-[18px] md:left-1/2 md:-translate-x-1/2 w-4 h-4 rounded-full border-2 border-white ${getStatusColor(
                     log.status
                   )} z-10`}
                 />
 
                 {/* Card */}
-                <div className="bg-moss-800/40 rounded-2xl overflow-hidden border border-moss-700/30 hover:border-moss-600/40 transition-colors w-full">
+                <div className="bg-white rounded-2xl overflow-hidden border border-garden-border hover:border-garden-greenBright transition-colors w-full shadow-sm">
                   {/* Photo */}
                   <div
                     className="relative cursor-pointer overflow-hidden"
@@ -102,12 +113,12 @@ export function PhotoTimeline({ logs, plants }: PhotoTimelineProps) {
                       whileHover={{ scale: 1.03 }}
                       transition={{ duration: 0.3 }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-moss-900/80 via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-transparent to-transparent" />
                     <div className="absolute bottom-3 left-3 right-3">
                       <span
-                        className={`inline-block font-mono text-[10px] uppercase tracking-wider px-2 py-1 rounded-full backdrop-blur-sm ${getStatusColor(
+                        className={`inline-block font-sans text-base uppercase tracking-wider px-2 py-1 rounded-full ${getStatusBadgeColor(
                           log.status
-                        )}/60 text-white`}
+                        )}`}
                       >
                         {log.status}
                       </span>
@@ -117,10 +128,10 @@ export function PhotoTimeline({ logs, plants }: PhotoTimelineProps) {
                   {/* Caption */}
                   <div className="p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="font-mono text-xs text-parchment-400">
+                      <p className="font-sans text-base text-garden-text">
                         {getPlantName(log.plantId)}
                       </p>
-                      <p className="font-mono text-[10px] text-moss-500">
+                      <p className="font-sans text-base text-garden-textMuted">
                         {new Date(log.date).toLocaleDateString("en-GB", {
                           day: "numeric",
                           month: "short",
@@ -128,7 +139,7 @@ export function PhotoTimeline({ logs, plants }: PhotoTimelineProps) {
                         })}
                       </p>
                     </div>
-                    <p className="font-body text-sm text-parchment-500/70">
+                    <p className="font-sans text-sm text-garden-textMuted">
                       {log.caption}
                     </p>
                   </div>
@@ -156,7 +167,7 @@ export function PhotoTimeline({ logs, plants }: PhotoTimelineProps) {
               transition={{ duration: 0.3 }}
             />
             <button
-              className="absolute top-6 right-6 font-mono text-sm text-white/60 hover:text-white transition-colors"
+              className="absolute top-6 right-6 font-sans text-base text-white/60 hover:text-white transition-colors"
               onClick={() => setLightboxUrl(null)}
             >
               Close

@@ -23,9 +23,9 @@ export function WorkingStep({ message, actions, processing }: WorkingStepProps) 
       <div className="mt-8 w-full max-w-xs space-y-4">
         {/* Animated bar */}
         {processing && (
-          <div className="w-full h-1.5 bg-moss-800/60 rounded-full overflow-hidden">
+          <div className="w-full h-1.5 bg-garden-greenLight rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-parchment-400 rounded-full"
+              className="h-full bg-garden-greenBright rounded-full"
               animate={{ width: ["0%", "100%"] }}
               transition={{ duration: 3, ease: "easeInOut" }}
             />
@@ -42,8 +42,8 @@ export function WorkingStep({ message, actions, processing }: WorkingStepProps) 
               transition={{ delay: i * 0.3 }}
               className="flex items-center gap-2"
             >
-              <span className="text-green-400 text-sm">{"\u2713"}</span>
-              <span className="font-mono text-[11px] text-moss-400">
+              <span className="text-garden-greenBright text-sm">{"\u2713"}</span>
+              <span className="font-sans text-base text-garden-textMuted">
                 {action.description}
               </span>
             </motion.div>

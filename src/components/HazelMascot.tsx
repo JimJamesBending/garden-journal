@@ -25,11 +25,11 @@ const MOOD_EMOJI: Record<HazelMood, string> = {
 };
 
 const MOOD_BG: Record<HazelMood, string> = {
-  looking: "bg-moss-800/40",
-  searching: "bg-parchment-800/20",
-  asking: "bg-moss-700/30",
-  working: "bg-earth-800/30",
-  celebrating: "bg-moss-600/20",
+  looking: "bg-garden-greenLight",
+  searching: "bg-amber-50",
+  asking: "bg-garden-greenLight",
+  working: "bg-orange-50",
+  celebrating: "bg-green-50",
 };
 
 const SIZE_CLASSES = {
@@ -68,11 +68,11 @@ export function HazelMascot({
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.2, duration: 0.4 }}
-        className={`relative bg-moss-800/50 border border-moss-700/30 rounded-2xl rounded-tl-sm ${s.bubble} max-w-sm`}
+        className={`relative bg-garden-greenLight border border-garden-border rounded-2xl rounded-tl-sm ${s.bubble} max-w-sm`}
       >
         {/* Bubble tail */}
-        <div className="absolute -left-2 top-3 w-0 h-0 border-t-[6px] border-t-transparent border-r-[8px] border-r-moss-700/30 border-b-[6px] border-b-transparent" />
-        <p className="font-body text-parchment-300 leading-relaxed">
+        <div className="absolute -left-2 top-3 w-0 h-0 border-t-[6px] border-t-transparent border-r-[8px] border-r-garden-border border-b-[6px] border-b-transparent" />
+        <p className="font-sans text-garden-text leading-relaxed">
           {message}
         </p>
       </motion.div>

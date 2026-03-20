@@ -31,8 +31,8 @@ export function GrowthChart({ data }: GrowthChartProps) {
 
   if (chartData.length === 0) {
     return (
-      <div className="bg-moss-800/20 border border-moss-700/20 rounded-xl p-6 text-center">
-        <p className="font-mono text-xs text-moss-500">
+      <div className="bg-garden-greenLight border border-garden-border rounded-xl p-6 text-center">
+        <p className="font-sans text-base text-garden-textMuted">
           No growth data yet. Start logging measurements!
         </p>
       </div>
@@ -40,69 +40,69 @@ export function GrowthChart({ data }: GrowthChartProps) {
   }
 
   return (
-    <div className="bg-moss-800/20 border border-moss-700/20 rounded-xl p-4">
-      <h3 className="font-mono text-[10px] text-moss-400 uppercase tracking-wider mb-3">
+    <div className="bg-garden-greenLight border border-garden-border rounded-xl p-4">
+      <h3 className="font-sans text-base text-garden-textMuted uppercase tracking-wider mb-3">
         Growth Over Time
       </h3>
       <ResponsiveContainer width="100%" height={180}>
         <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#163a1620" />
+          <CartesianGrid strokeDasharray="3 3" stroke="#C8E6C9" />
           <XAxis
             dataKey="date"
-            tick={{ fontSize: 9, fill: "#4a8a4a" }}
+            tick={{ fontSize: 14, fill: "#1A1A1A" }}
             tickLine={false}
-            axisLine={{ stroke: "#163a1640" }}
+            axisLine={{ stroke: "#C8E6C9" }}
           />
           <YAxis
             yAxisId="left"
-            tick={{ fontSize: 9, fill: "#4a8a4a" }}
+            tick={{ fontSize: 14, fill: "#1A1A1A" }}
             tickLine={false}
             axisLine={false}
             label={{
               value: "cm",
               angle: -90,
               position: "insideLeft",
-              style: { fontSize: 9, fill: "#4a8a4a" },
+              style: { fontSize: 14, fill: "#1A1A1A" },
             }}
           />
           <YAxis
             yAxisId="right"
             orientation="right"
-            tick={{ fontSize: 9, fill: "#c4a05a" }}
+            tick={{ fontSize: 14, fill: "#4A4A4A" }}
             tickLine={false}
             axisLine={false}
             label={{
               value: "leaves",
               angle: 90,
               position: "insideRight",
-              style: { fontSize: 9, fill: "#c4a05a" },
+              style: { fontSize: 14, fill: "#4A4A4A" },
             }}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: "#0f2a0f",
-              border: "1px solid #163a16",
+              backgroundColor: "#FFFFFF",
+              border: "1px solid #C8E6C9",
               borderRadius: "8px",
-              fontSize: "11px",
-              color: "#e8d5b0",
+              fontSize: "14px",
+              color: "#1A1A1A",
             }}
           />
           <Line
             yAxisId="left"
             type="monotone"
             dataKey="height"
-            stroke="#4a8a4a"
+            stroke="#2E7D32"
             strokeWidth={2}
-            dot={{ r: 3, fill: "#4a8a4a" }}
+            dot={{ r: 3, fill: "#2E7D32" }}
             name="Height (cm)"
           />
           <Line
             yAxisId="right"
             type="monotone"
             dataKey="leaves"
-            stroke="#c4a05a"
+            stroke="#FF8F00"
             strokeWidth={2}
-            dot={{ r: 3, fill: "#c4a05a" }}
+            dot={{ r: 3, fill: "#FF8F00" }}
             name="Leaf Count"
           />
         </LineChart>

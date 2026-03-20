@@ -76,29 +76,29 @@ export function PhotoJournal({ logs, plants, onBack, onRefresh }: PhotoJournalPr
       animate={{ x: 0 }}
       exit={{ x: "100%" }}
       transition={{ type: "spring", damping: 30, stiffness: 300 }}
-      className="min-h-screen"
+      className="min-h-screen bg-white"
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-moss-800/50">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-garden-border">
         <button
           onClick={onBack}
-          className="font-mono text-xs text-moss-400 hover:text-parchment-300 transition-colors"
+          className="font-sans text-base text-garden-textMuted hover:text-garden-text transition-colors min-h-[48px] min-w-[48px]"
         >
           {"\u2190"} Back
         </button>
-        <h2 className="font-display text-lg text-parchment-200">Photo Journal</h2>
+        <h2 className="font-sans font-bold text-lg text-garden-text">Photo Journal</h2>
         <div className="flex gap-2">
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="font-mono text-[10px] text-moss-400 bg-moss-800/40 border border-moss-700/30 px-3 py-1.5 rounded-full active:scale-95 disabled:opacity-50"
+            className="font-sans text-base text-garden-textMuted bg-garden-greenLight border border-garden-border px-3 py-1.5 rounded-full active:scale-95 disabled:opacity-50 min-h-[48px] min-w-[48px]"
           >
             {uploading ? "..." : "\u{1F5BC}\uFE0F"}
           </button>
           <button
             onClick={() => cameraInputRef.current?.click()}
             disabled={uploading}
-            className="font-mono text-[10px] text-moss-400 bg-moss-800/40 border border-moss-700/30 px-3 py-1.5 rounded-full active:scale-95 disabled:opacity-50"
+            className="font-sans text-base text-garden-textMuted bg-garden-greenLight border border-garden-border px-3 py-1.5 rounded-full active:scale-95 disabled:opacity-50 min-h-[48px] min-w-[48px]"
           >
             {uploading ? "..." : "\u{1F4F7}"}
           </button>
@@ -109,10 +109,10 @@ export function PhotoJournal({ logs, plants, onBack, onRefresh }: PhotoJournalPr
       <div className="overflow-x-auto flex gap-2 px-4 py-3 scrollbar-hide">
         <button
           onClick={() => setFilter("all")}
-          className={`font-mono text-[10px] px-3 py-1.5 rounded-full whitespace-nowrap transition-colors ${
+          className={`font-sans text-base px-3 py-1.5 rounded-full whitespace-nowrap transition-colors min-h-[48px] ${
             filter === "all"
-              ? "bg-moss-600 text-parchment-200"
-              : "bg-moss-800/30 text-moss-400"
+              ? "bg-garden-greenBright text-white"
+              : "bg-garden-greenLight text-garden-textMuted"
           }`}
         >
           All ({labeledLogs.length})
@@ -123,10 +123,10 @@ export function PhotoJournal({ logs, plants, onBack, onRefresh }: PhotoJournalPr
             <button
               key={plant.id}
               onClick={() => setFilter(plant.id)}
-              className={`font-mono text-[10px] px-3 py-1.5 rounded-full whitespace-nowrap transition-colors flex items-center gap-1.5 ${
+              className={`font-sans text-base px-3 py-1.5 rounded-full whitespace-nowrap transition-colors flex items-center gap-1.5 min-h-[48px] ${
                 filter === plant.id
-                  ? "bg-moss-600 text-parchment-200"
-                  : "bg-moss-800/30 text-moss-400"
+                  ? "bg-garden-greenBright text-white"
+                  : "bg-garden-greenLight text-garden-textMuted"
               }`}
             >
               {(() => {
@@ -154,7 +154,7 @@ export function PhotoJournal({ logs, plants, onBack, onRefresh }: PhotoJournalPr
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.03, duration: 0.3 }}
             onClick={() => setLightboxIndex(i)}
-            className="w-full break-inside-avoid rounded-xl overflow-hidden bg-moss-800/30 border border-moss-700/20"
+            className="w-full break-inside-avoid rounded-xl overflow-hidden bg-garden-greenLight border border-garden-border"
           >
             <img
               src={galleryImage(log.cloudinaryUrl)}
@@ -163,15 +163,15 @@ export function PhotoJournal({ logs, plants, onBack, onRefresh }: PhotoJournalPr
               loading="lazy"
             />
             <div className="px-2.5 py-2">
-              <p className="font-mono text-[9px] text-moss-400">
+              <p className="font-sans text-sm text-garden-textMuted">
                 {getPlantName(log.plantId)}
               </p>
               {log.caption && (
-                <p className="font-body text-[10px] text-parchment-400/70 truncate">
+                <p className="font-sans text-base text-garden-text truncate">
                   {log.caption}
                 </p>
               )}
-              <p className="font-mono text-[8px] text-moss-600 mt-0.5">
+              <p className="font-sans text-sm text-garden-textMuted mt-0.5">
                 {new Date(log.date).toLocaleDateString("en-GB", {
                   day: "numeric",
                   month: "short",
@@ -192,7 +192,7 @@ export function PhotoJournal({ logs, plants, onBack, onRefresh }: PhotoJournalPr
             className="fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-4"
           >
             <button
-              className="absolute top-4 right-4 font-mono text-sm text-white/60 hover:text-white z-10"
+              className="absolute top-4 right-4 font-sans text-base text-white/60 hover:text-white z-10 min-h-[48px] min-w-[48px]"
               onClick={() => setLightboxIndex(null)}
             >
               {"\u2715"}
@@ -205,13 +205,13 @@ export function PhotoJournal({ logs, plants, onBack, onRefresh }: PhotoJournalPr
             />
 
             <div className="mt-4 text-center">
-              <p className="font-mono text-xs text-moss-400">
+              <p className="font-sans text-base text-white/70">
                 {getPlantName(filteredLogs[lightboxIndex].plantId)}
               </p>
-              <p className="font-body text-sm text-parchment-300 mt-1">
+              <p className="font-sans text-base text-white mt-1">
                 {filteredLogs[lightboxIndex].caption}
               </p>
-              <p className="font-mono text-[10px] text-moss-600 mt-1">
+              <p className="font-sans text-base text-white/60 mt-1">
                 {new Date(filteredLogs[lightboxIndex].date).toLocaleDateString("en-GB", {
                   day: "numeric",
                   month: "long",
@@ -225,7 +225,7 @@ export function PhotoJournal({ logs, plants, onBack, onRefresh }: PhotoJournalPr
               {lightboxIndex > 0 && (
                 <button
                   onClick={() => setLightboxIndex(lightboxIndex - 1)}
-                  className="font-mono text-sm text-white/50 hover:text-white"
+                  className="font-sans text-base text-white/50 hover:text-white min-h-[48px] min-w-[48px]"
                 >
                   {"\u2190"} Prev
                 </button>
@@ -233,7 +233,7 @@ export function PhotoJournal({ logs, plants, onBack, onRefresh }: PhotoJournalPr
               {lightboxIndex < filteredLogs.length - 1 && (
                 <button
                   onClick={() => setLightboxIndex(lightboxIndex + 1)}
-                  className="font-mono text-sm text-white/50 hover:text-white"
+                  className="font-sans text-base text-white/50 hover:text-white min-h-[48px] min-w-[48px]"
                 >
                   Next {"\u2192"}
                 </button>

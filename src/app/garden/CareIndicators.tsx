@@ -47,7 +47,7 @@ const STATUS_COLORS = {
   good: "bg-emerald-500",
   due: "bg-amber-500",
   overdue: "bg-red-500",
-  none: "bg-moss-700",
+  none: "bg-gray-400",
 };
 
 export function CareIndicators({ lastWatered, lastFed, wateringNeeds = "moderate" }: CareIndicatorsProps) {
@@ -62,7 +62,7 @@ export function CareIndicators({ lastWatered, lastFed, wateringNeeds = "moderate
             waterStatus === "overdue" ? "animate-pulse" : ""
           }`}
         />
-        <span className="font-mono text-[9px] text-moss-500">{"\u{1F4A7}"}</span>
+        <span className="font-sans text-sm text-garden-textMuted">{"\u{1F4A7}"}</span>
       </div>
       <div className="flex items-center gap-1">
         <span
@@ -70,7 +70,7 @@ export function CareIndicators({ lastWatered, lastFed, wateringNeeds = "moderate
             feedStatus === "overdue" ? "animate-pulse" : ""
           }`}
         />
-        <span className="font-mono text-[9px] text-moss-500">{"\u{1F33F}"}</span>
+        <span className="font-sans text-sm text-garden-textMuted">{"\u{1F33F}"}</span>
       </div>
     </div>
   );

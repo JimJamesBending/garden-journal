@@ -10,7 +10,7 @@ export function GrowthSparkline({ data }: GrowthSparklineProps) {
   if (data.length < 2) {
     return (
       <div className="h-[30px] flex items-center">
-        <div className="w-full h-px bg-moss-700/30" />
+        <div className="w-full h-px bg-garden-border" />
       </div>
     );
   }
@@ -21,7 +21,7 @@ export function GrowthSparkline({ data }: GrowthSparklineProps) {
         <Line
           type="monotone"
           dataKey="height"
-          stroke="#4a8a4a"
+          stroke="#2E7D32"
           strokeWidth={1.5}
           dot={false}
           isAnimationActive={false}

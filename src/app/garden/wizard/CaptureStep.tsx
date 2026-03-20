@@ -46,12 +46,12 @@ export function CaptureStep({ photos, onAddPhotos, onRemovePhoto, onDone }: Capt
             whileTap={{ scale: 0.93 }}
             onClick={() => cameraInputRef.current?.click()}
             disabled={!canAddMore}
-            className="w-44 h-44 rounded-3xl bg-moss-700 hover:bg-moss-600 text-parchment-200 shadow-lg shadow-moss-900/50
+            className="w-44 h-44 rounded-3xl bg-garden-greenBright hover:bg-garden-green text-white shadow-lg
                        flex flex-col items-center justify-center gap-2 transition-colors
-                       disabled:opacity-30 disabled:cursor-not-allowed active:bg-moss-500"
+                       disabled:opacity-30 disabled:cursor-not-allowed active:bg-garden-green"
           >
             <span className="text-5xl">{"\u{1F4F7}"}</span>
-            <span className="font-display text-lg">Take Photo</span>
+            <span className="font-sans font-bold text-lg">Take Photo</span>
           </motion.button>
 
           {/* File picker button */}
@@ -59,15 +59,15 @@ export function CaptureStep({ photos, onAddPhotos, onRemovePhoto, onDone }: Capt
             whileTap={{ scale: 0.95 }}
             onClick={() => fileInputRef.current?.click()}
             disabled={!canAddMore}
-            className="w-full max-w-[176px] py-3 rounded-xl border border-dashed border-moss-600/50 bg-moss-800/20
-                       text-moss-400 hover:text-parchment-300 hover:border-moss-500/50 transition-colors
-                       font-mono text-sm disabled:opacity-30 disabled:cursor-not-allowed"
+            className="w-full max-w-[176px] py-3 rounded-xl border border-dashed border-garden-border bg-garden-greenLight
+                       text-garden-textMuted hover:text-garden-text hover:border-garden-greenBright transition-colors
+                       font-sans text-sm disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {"\u{1F4C1}"} Choose Files
           </motion.button>
 
           {!canAddMore && (
-            <p className="font-mono text-[10px] text-moss-500 text-center">
+            <p className="font-sans text-base text-garden-textMuted text-center">
               Maximum {MAX_PHOTOS} photos per session
             </p>
           )}
@@ -81,7 +81,7 @@ export function CaptureStep({ photos, onAddPhotos, onRemovePhoto, onDone }: Capt
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="border-t border-moss-800/50 bg-night-950/80 px-4 py-3"
+            className="border-t border-garden-border bg-garden-offwhite px-4 py-3"
           >
             <div className="flex gap-2 overflow-x-auto pb-1">
               {photos.map((photo) => (
@@ -93,21 +93,21 @@ export function CaptureStep({ photos, onAddPhotos, onRemovePhoto, onDone }: Capt
                   className="relative flex-shrink-0 w-16 h-16"
                 >
                   {photo.uploading ? (
-                    <div className="w-full h-full rounded-lg bg-moss-800/60 flex items-center justify-center">
-                      <div className="w-6 h-6 border-2 border-moss-600 border-t-parchment-400 rounded-full animate-spin" />
+                    <div className="w-full h-full rounded-lg bg-garden-greenLight flex items-center justify-center">
+                      <div className="w-6 h-6 border-2 border-garden-border border-t-garden-greenBright rounded-full animate-spin" />
                     </div>
                   ) : (
                     <img
                       src={photo.thumbnailUrl || thumbnail(photo.cloudinaryUrl)}
                       alt=""
-                      className="w-full h-full rounded-lg object-cover border border-moss-700/30"
+                      className="w-full h-full rounded-lg object-cover border border-garden-border"
                     />
                   )}
                   {/* Remove button */}
                   <button
                     onClick={() => onRemovePhoto(photo.id)}
-                    className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-900/80 text-red-200 text-[10px]
-                               flex items-center justify-center hover:bg-red-800 transition-colors"
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-garden-red text-white text-base
+                               flex items-center justify-center hover:bg-red-700 transition-colors"
                   >
                     {"\u2715"}
                   </button>
@@ -118,8 +118,8 @@ export function CaptureStep({ photos, onAddPhotos, onRemovePhoto, onDone }: Capt
               {canAddMore && (
                 <button
                   onClick={() => cameraInputRef.current?.click()}
-                  className="flex-shrink-0 w-16 h-16 rounded-lg border border-dashed border-moss-600/40 bg-moss-800/20
-                             flex items-center justify-center text-moss-500 hover:text-moss-400 hover:border-moss-500/40"
+                  className="flex-shrink-0 w-16 h-16 rounded-lg border border-dashed border-garden-border bg-garden-greenLight
+                             flex items-center justify-center text-garden-textMuted hover:text-garden-text hover:border-garden-greenBright"
                 >
                   <span className="text-2xl">+</span>
                 </button>
@@ -128,7 +128,7 @@ export function CaptureStep({ photos, onAddPhotos, onRemovePhoto, onDone }: Capt
 
             {/* Status + Done button */}
             <div className="flex items-center justify-between mt-3">
-              <span className="font-mono text-[10px] text-moss-500">
+              <span className="font-sans text-base text-garden-textMuted">
                 {uploadedCount} photo{uploadedCount !== 1 ? "s" : ""}
                 {uploadingCount > 0 && `, ${uploadingCount} uploading...`}
               </span>
@@ -136,8 +136,8 @@ export function CaptureStep({ photos, onAddPhotos, onRemovePhoto, onDone }: Capt
                 whileTap={{ scale: 0.95 }}
                 onClick={onDone}
                 disabled={uploadedCount === 0 || uploadingCount > 0}
-                className="bg-moss-600 hover:bg-moss-500 text-parchment-200 font-mono text-sm px-6 py-2.5 rounded-xl
-                           shadow-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className="bg-garden-greenBright hover:bg-garden-green text-white font-sans text-sm px-6 py-2.5 rounded-xl
+                           shadow-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed min-h-[48px]"
               >
                 Done — Let Hazel Look!
               </motion.button>

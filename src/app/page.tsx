@@ -1,109 +1,65 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import {
-  getPlants,
-  getLogs,
-  getCareEvents,
-  getGrowth,
-  getAdvice,
-  saveAdvice,
-  getSpaces,
-  getGardenId,
-} from "@/lib/supabase/queries";
-import { fetchWeather, getGardeningContext, getWateringAdvice, getFrostAlert } from "@/lib/weather";
-import { generateAdvice } from "@/lib/advice-engine";
-import { FrontPage } from "./FrontPage";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  // --- Not logged in: show static landing page ---
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-night-950 flex flex-col items-center justify-center px-6 text-center">
-        <h1 className="font-display text-5xl md:text-7xl font-light text-parchment-300 mb-4">
-          Garden Journal
+  // Logged in users go straight to their garden
+  if (user) {
+    redirect("/garden");
+  }
+
+  // Landing page for new/returning visitors
+  return (
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6">
+      <div className="w-full max-w-lg text-center">
+        {/* Big leaf emoji as visual anchor */}
+        <div className="text-6xl mb-6">🌱</div>
+
+        <h1 className="text-heading-lg text-garden-text mb-4">
+          Your Garden Starts Here
         </h1>
-        <p className="font-body text-lg md:text-xl text-parchment-500 max-w-md mb-10">
-          Track your seedlings from sowing to harvest. An AI-powered gardening
-          companion that anticipates, advises, and helps you grow.
+
+        <p className="text-body text-garden-textMuted mb-10 max-w-md mx-auto">
+          Snap a photo of your plant or seed packet and get instant care advice
         </p>
-        <div className="flex gap-4">
+
+        {/* Three big CTAs */}
+        <div className="space-y-3 mb-8">
           <Link
-            href="/login"
-            className="font-mono text-sm px-6 py-2.5 rounded border border-moss-600 text-parchment-300 hover:bg-moss-900/40 hover:border-moss-400 transition-colors"
+            href="/try?mode=camera"
+            className="flex items-center justify-center gap-3 w-full h-16 rounded-xl bg-garden-greenBright text-white text-button transition-colors hover:bg-garden-green"
           >
-            Log in
+            📷 Take a Photo of My Plant
           </Link>
+
           <Link
-            href="/signup"
-            className="font-mono text-sm px-6 py-2.5 rounded bg-moss-700 text-parchment-200 hover:bg-moss-600 transition-colors"
+            href="/try?mode=packet"
+            className="flex items-center justify-center gap-3 w-full h-16 rounded-xl bg-garden-greenBright text-white text-button transition-colors hover:bg-garden-green"
           >
-            Sign up
+            📦 Snap My Seed Packet
+          </Link>
+
+          <Link
+            href="/try?mode=search"
+            className="flex items-center justify-center gap-3 w-full h-16 rounded-xl bg-white border-2 border-garden-greenBright text-garden-greenBright text-button transition-colors hover:bg-garden-greenLight"
+          >
+            🌱 Tell Me What I&apos;m Growing
           </Link>
         </div>
+
+        {/* Sign in link */}
+        <p className="text-body text-garden-textMuted">
+          Already have an account?{" "}
+          <Link href="/login" className="text-garden-greenBright font-semibold underline">
+            Sign in
+          </Link>
+        </p>
       </div>
-    );
-  }
-
-  // --- Logged in: fetch data and render full front page ---
-  const gardenId = await getGardenId(supabase);
-
-  const [plants, logs, careEvents, growth, spaces] = await Promise.all([
-    getPlants(supabase, gardenId),
-    getLogs(supabase, gardenId),
-    getCareEvents(supabase, gardenId),
-    getGrowth(supabase, gardenId),
-    getSpaces(supabase, gardenId),
-  ]);
-
-  // Fetch weather (with fallback)
-  let weather = null;
-  try {
-    const forecast = await fetchWeather();
-    weather = {
-      current: forecast.current,
-      daily: forecast.daily.map((d) => ({
-        ...d,
-        gardeningContext: getGardeningContext(d),
-      })),
-      advice: {
-        watering: getWateringAdvice(forecast),
-        frostAlert: getFrostAlert(forecast),
-      },
-    };
-  } catch (e) {
-    console.warn("Weather fetch failed:", e);
-  }
-
-  // Generate advice (cached daily)
-  let advice = await getAdvice(supabase, gardenId);
-  const today = new Date().toISOString().split("T")[0];
-  const isFresh = advice.length > 0 && advice[0]?.generatedAt?.startsWith(today);
-
-  if (!isFresh) {
-    let forecast = null;
-    try {
-      forecast = await fetchWeather();
-    } catch {}
-    advice = generateAdvice(plants, careEvents, growth, forecast);
-    try {
-      await saveAdvice(supabase, gardenId, advice);
-    } catch {}
-  }
-
-  return (
-    <FrontPage
-      plants={plants}
-      logs={logs}
-      weather={weather}
-      advice={advice}
-      spaces={spaces}
-    />
+    </div>
   );
 }

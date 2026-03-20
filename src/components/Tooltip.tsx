@@ -74,7 +74,7 @@ export function Tooltip({ term, definition, children }: TooltipProps) {
       {/* Trigger — dotted underline */}
       <span
         ref={triggerRef}
-        className="border-b border-dotted border-moss-400/60 cursor-help text-parchment-300 hover:border-moss-300 transition-colors"
+        className="border-b border-dotted border-garden-border cursor-help text-garden-text hover:border-garden-greenBright transition-colors"
         onMouseEnter={show}
         onMouseLeave={hide}
         onClick={toggle}
@@ -98,7 +98,7 @@ export function Tooltip({ term, definition, children }: TooltipProps) {
           id={`tooltip-${term}`}
           role="tooltip"
           className={`absolute z-[100] w-64 sm:w-72 px-3.5 py-2.5 rounded-xl
-            bg-night-950/98 border border-moss-700/50 shadow-xl shadow-black/40
+            bg-white border border-garden-border shadow-xl
             backdrop-blur-md
             ${
               position === "above"
@@ -112,7 +112,7 @@ export function Tooltip({ term, definition, children }: TooltipProps) {
         >
           {/* Arrow */}
           <span
-            className={`absolute left-1/2 -translate-x-1/2 w-2.5 h-2.5 rotate-45 bg-night-950/98 border-moss-700/50
+            className={`absolute left-1/2 -translate-x-1/2 w-2.5 h-2.5 rotate-45 bg-white border-garden-border
               ${
                 position === "above"
                   ? "bottom-[-5px] border-r border-b"
@@ -122,17 +122,17 @@ export function Tooltip({ term, definition, children }: TooltipProps) {
           />
 
           {/* Term header */}
-          <span className="block font-mono text-[10px] text-moss-400 uppercase tracking-wider mb-1">
+          <span className="block font-sans text-base text-garden-textMuted uppercase tracking-wider mb-1">
             {term}
           </span>
 
           {/* Definition */}
-          <span className="block font-body text-[12px] text-parchment-300/90 leading-relaxed">
+          <span className="block font-sans text-sm text-garden-text leading-relaxed">
             {text}
           </span>
 
           {/* Leaf decoration */}
-          <span className="absolute top-1.5 right-2.5 text-[8px] opacity-30">
+          <span className="absolute top-1.5 right-2.5 text-sm opacity-30">
             {"\u{1F33F}"}
           </span>
         </span>

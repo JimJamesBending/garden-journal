@@ -67,22 +67,22 @@ export function LogForm() {
   if (success) {
     return (
       <div className="max-w-md mx-auto text-center">
-        <h2 className="font-display text-3xl text-parchment-200 mb-4">
+        <h2 className="font-sans font-bold text-3xl text-garden-text mb-4">
           Logged!
         </h2>
-        <p className="font-body text-parchment-500 mb-6">
+        <p className="font-sans text-garden-textMuted mb-6">
           Photo entry saved successfully.
         </p>
         <div className="flex gap-4 justify-center">
           <button
             onClick={() => setSuccess(false)}
-            className="font-mono text-sm text-moss-400 border border-moss-700/50 px-4 py-2 rounded hover:border-moss-500 hover:text-parchment-400 transition-colors"
+            className="font-sans text-sm text-garden-textMuted border border-garden-border px-4 py-2 rounded hover:border-garden-greenBright hover:text-garden-text transition-colors min-h-[48px]"
           >
             Add Another
           </button>
           <a
             href="/"
-            className="font-mono text-sm text-moss-400 border border-moss-700/50 px-4 py-2 rounded hover:border-moss-500 hover:text-parchment-400 transition-colors"
+            className="font-sans text-sm text-garden-textMuted border border-garden-border px-4 py-2 rounded hover:border-garden-greenBright hover:text-garden-text transition-colors min-h-[48px] inline-flex items-center"
           >
             View Garden
           </a>
@@ -93,20 +93,20 @@ export function LogForm() {
 
   return (
     <div className="max-w-lg mx-auto">
-      <h2 className="font-display text-3xl text-parchment-200 mb-6">
+      <h2 className="font-sans font-bold text-3xl text-garden-text mb-6">
         Add Photo Log
       </h2>
 
       <div className="space-y-6">
         {/* Plant selector */}
         <div>
-          <label className="block mb-2 font-mono text-xs text-moss-500 uppercase tracking-wider">
+          <label className="block mb-2 font-sans text-base text-garden-textMuted uppercase tracking-wider">
             Plant
           </label>
           <select
             value={plantId}
             onChange={(e) => setPlantId(e.target.value)}
-            className="w-full bg-night-950/80 border border-moss-800/50 rounded px-3 py-2 text-parchment-300 font-body text-sm focus:outline-none focus:border-moss-600"
+            className="w-full bg-white border border-garden-border rounded px-3 py-2 text-garden-text font-sans text-sm focus:outline-none focus:border-garden-greenBright"
           >
             <option value="">Select a plant...</option>
             {plants.map((p) => (
@@ -119,7 +119,7 @@ export function LogForm() {
 
         {/* Photo upload */}
         <div>
-          <label className="block mb-2 font-mono text-xs text-moss-500 uppercase tracking-wider">
+          <label className="block mb-2 font-sans text-base text-garden-textMuted uppercase tracking-wider">
             Photo
           </label>
           {imageUrl ? (
@@ -127,11 +127,11 @@ export function LogForm() {
               <img
                 src={imageUrl}
                 alt="Upload preview"
-                className="w-full rounded border border-moss-800/30"
+                className="w-full rounded border border-garden-border"
               />
               <button
                 onClick={() => setImageUrl("")}
-                className="absolute top-2 right-2 bg-night-900/80 text-parchment-400 font-mono text-xs px-2 py-1 rounded hover:bg-night-800 transition-colors"
+                className="absolute top-2 right-2 bg-white text-garden-textMuted font-sans text-base px-2 py-1 rounded hover:bg-garden-greenLight transition-colors"
               >
                 Remove
               </button>
@@ -156,12 +156,12 @@ export function LogForm() {
               {({ open }) => (
                 <button
                   onClick={() => open()}
-                  className="w-full border-2 border-dashed border-moss-800/50 rounded-lg py-8 text-center hover:border-moss-600/60 transition-colors group"
+                  className="w-full border-2 border-dashed border-garden-border rounded-lg py-8 text-center hover:border-garden-greenBright transition-colors group"
                 >
-                  <p className="font-mono text-sm text-moss-500 group-hover:text-parchment-400 transition-colors">
+                  <p className="font-sans text-sm text-garden-textMuted group-hover:text-garden-text transition-colors">
                     Click to upload a photo
                   </p>
-                  <p className="font-mono text-xs text-moss-700 mt-1">
+                  <p className="font-sans text-base text-garden-textMuted mt-1">
                     JPG, PNG, HEIC
                   </p>
                 </button>
@@ -172,27 +172,27 @@ export function LogForm() {
 
         {/* Caption */}
         <div>
-          <label className="block mb-2 font-mono text-xs text-moss-500 uppercase tracking-wider">
+          <label className="block mb-2 font-sans text-base text-garden-textMuted uppercase tracking-wider">
             Caption
           </label>
           <textarea
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
             rows={3}
-            className="w-full bg-night-950/80 border border-moss-800/50 rounded px-3 py-2 text-parchment-300 font-body text-sm focus:outline-none focus:border-moss-600 resize-none"
+            className="w-full bg-white border border-garden-border rounded px-3 py-2 text-garden-text font-sans text-sm focus:outline-none focus:border-garden-greenBright resize-none"
             placeholder="What's happening with this plant?"
           />
         </div>
 
         {/* Status */}
         <div>
-          <label className="block mb-2 font-mono text-xs text-moss-500 uppercase tracking-wider">
+          <label className="block mb-2 font-sans text-base text-garden-textMuted uppercase tracking-wider">
             Status
           </label>
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="w-full bg-night-950/80 border border-moss-800/50 rounded px-3 py-2 text-parchment-300 font-body text-sm focus:outline-none focus:border-moss-600"
+            className="w-full bg-white border border-garden-border rounded px-3 py-2 text-garden-text font-sans text-sm focus:outline-none focus:border-garden-greenBright"
           >
             <option value="sowed">Sowed</option>
             <option value="germinated">Germinated</option>
@@ -204,12 +204,12 @@ export function LogForm() {
 
         {/* Submit */}
         {error && (
-          <p className="font-mono text-xs text-red-400">{error}</p>
+          <p className="font-sans text-base text-red-600">{error}</p>
         )}
         <button
           onClick={handleSubmit}
           disabled={submitting}
-          className="w-full bg-moss-700 hover:bg-moss-600 disabled:bg-moss-800 disabled:text-moss-600 text-parchment-200 font-mono text-sm py-3 rounded transition-colors"
+          className="w-full bg-garden-greenBright hover:bg-garden-green disabled:bg-gray-300 disabled:text-gray-500 text-white font-sans text-sm py-3 rounded transition-colors min-h-[48px]"
         >
           {submitting ? "Saving..." : "Save Log Entry"}
         </button>

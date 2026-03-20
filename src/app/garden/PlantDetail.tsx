@@ -18,11 +18,11 @@ interface PlantDetailProps {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  sowed: "bg-earth-600/80 text-earth-200",
-  germinated: "bg-moss-600/80 text-moss-100",
-  transplanted: "bg-moss-500/80 text-moss-100",
-  flowering: "bg-parchment-600/80 text-parchment-100",
-  harvested: "bg-parchment-500/80 text-parchment-100",
+  sowed: "bg-garden-greenLight text-garden-text",
+  germinated: "bg-garden-greenLight text-garden-green",
+  transplanted: "bg-garden-greenLight text-garden-green",
+  flowering: "bg-garden-greenLight text-garden-text",
+  harvested: "bg-garden-greenLight text-garden-text",
 };
 
 const CARE_ICONS: Record<string, string> = {
@@ -159,7 +159,7 @@ export function PlantDetail({
       animate={{ x: 0 }}
       exit={{ x: "100%" }}
       transition={{ type: "spring", damping: 30, stiffness: 300 }}
-      className="min-h-screen relative"
+      className="min-h-screen relative bg-white"
     >
       {/* Blurred photo backdrop */}
       {sortedPhotos.length > 0 && (
@@ -170,14 +170,14 @@ export function PlantDetail({
             aria-hidden
             className="w-full h-full object-cover opacity-10"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-moss-950/80 to-moss-950/95" />
+          <div className="absolute inset-0 bg-white/90" />
         </div>
       )}
 
       {/* Back button */}
       <button
         onClick={onBack}
-        className="relative z-10 flex items-center gap-1 px-4 py-3 font-mono text-xs text-moss-400 hover:text-parchment-300 transition-colors active:scale-95"
+        className="relative z-10 flex items-center gap-1 px-4 py-3 min-h-[48px] min-w-[48px] font-sans text-base text-garden-textMuted hover:text-garden-text transition-colors active:scale-95"
       >
         {"\u2190"} Back to garden
       </button>
@@ -190,7 +190,7 @@ export function PlantDetail({
               <button
                 key={photo.id}
                 onClick={() => setLightboxUrl(galleryImage(photo.cloudinaryUrl))}
-                className="min-w-[85vw] max-w-[400px] snap-start flex-shrink-0 rounded-xl overflow-hidden"
+                className="min-w-[85vw] max-w-[400px] snap-start flex-shrink-0 rounded-xl overflow-hidden min-h-[48px] min-w-[48px]"
               >
                 <img
                   src={heroImage(photo.cloudinaryUrl)}
@@ -208,7 +208,7 @@ export function PlantDetail({
                 <div
                   key={i}
                   className={`w-1.5 h-1.5 rounded-full ${
-                    i === 0 ? "bg-parchment-400" : "bg-moss-700"
+                    i === 0 ? "bg-garden-greenBright" : "bg-garden-border"
                   }`}
                 />
               ))}
@@ -219,42 +219,42 @@ export function PlantDetail({
 
       {/* Plant info */}
       <div className="relative z-10 px-4 mb-4">
-        <div className="bg-moss-800/40 border border-moss-700/30 rounded-xl p-4">
+        <div className="bg-garden-greenLight border border-garden-border rounded-xl p-4">
           <div className="flex items-start justify-between mb-2">
             <div>
-              <h1 className="font-display text-2xl text-parchment-200">
+              <h1 className="font-sans font-bold text-2xl text-garden-text">
                 {plant.commonName}
               </h1>
               {plant.variety && (
-                <p className="font-mono text-[10px] text-moss-400">{plant.variety}</p>
+                <p className="font-sans text-base text-garden-textMuted">{plant.variety}</p>
               )}
               {plant.latinName && (
-                <p className="font-body text-xs text-moss-500 italic">{plant.latinName}</p>
+                <p className="font-sans text-base text-garden-textMuted italic">{plant.latinName}</p>
               )}
             </div>
-            <span className={`font-mono text-[9px] uppercase tracking-wider px-2 py-1 rounded-full ${STATUS_STYLES[latestStatus] || "bg-moss-700/60 text-moss-300"}`}>
+            <span className={`font-sans text-sm uppercase tracking-wider px-2 py-1 rounded-full ${STATUS_STYLES[latestStatus] || "bg-garden-greenLight text-garden-text"}`}>
               {latestStatus}
             </span>
           </div>
 
           <div className="grid grid-cols-3 gap-3 mt-3">
             <div className="text-center">
-              <div className="font-display text-lg text-parchment-200">{days}</div>
-              <div className="font-mono text-[8px] text-moss-500 uppercase">Days</div>
+              <div className="font-sans font-bold text-lg text-garden-text">{days}</div>
+              <div className="font-sans text-sm text-garden-textMuted uppercase">Days</div>
             </div>
             <div className="text-center">
-              <div className="font-display text-lg text-parchment-200">{sortedPhotos.length}</div>
-              <div className="font-mono text-[8px] text-moss-500 uppercase">Photos</div>
+              <div className="font-sans font-bold text-lg text-garden-text">{sortedPhotos.length}</div>
+              <div className="font-sans text-sm text-garden-textMuted uppercase">Photos</div>
             </div>
             <div className="text-center">
-              <div className="font-display text-lg text-parchment-200">{sortedCare.length}</div>
-              <div className="font-mono text-[8px] text-moss-500 uppercase">Care Logs</div>
+              <div className="font-sans font-bold text-lg text-garden-text">{sortedCare.length}</div>
+              <div className="font-sans text-sm text-garden-textMuted uppercase">Care Logs</div>
             </div>
           </div>
 
           {harvest && (
-            <div className="mt-3 pt-3 border-t border-moss-700/20">
-              <p className="font-mono text-[10px] text-parchment-400">
+            <div className="mt-3 pt-3 border-t border-garden-border">
+              <p className="font-sans text-base text-garden-text">
                 {"\u{1F33E}"} Estimated harvest in {harvest.daysRemaining} days ({harvest.estimated})
               </p>
             </div>
@@ -267,12 +267,12 @@ export function PlantDetail({
         {/* Growth Chart */}
         <button
           onClick={() => toggleSection("chart")}
-          className="w-full flex items-center justify-between py-2"
+          className="w-full flex items-center justify-between py-2 min-h-[48px]"
         >
-          <h3 className="font-mono text-[11px] text-parchment-300 uppercase tracking-wider">
+          <h3 className="font-sans text-base text-garden-text uppercase tracking-wider">
             {"\u{1F4CA}"} Growth Data
           </h3>
-          <span className="font-mono text-xs text-moss-500">
+          <span className="font-sans text-base text-garden-textMuted">
             {expandedSection === "chart" ? "\u2212" : "+"}
           </span>
         </button>
@@ -292,12 +292,12 @@ export function PlantDetail({
         {/* Care Timeline */}
         <button
           onClick={() => toggleSection("care")}
-          className="w-full flex items-center justify-between py-2"
+          className="w-full flex items-center justify-between py-2 min-h-[48px]"
         >
-          <h3 className="font-mono text-[11px] text-parchment-300 uppercase tracking-wider">
+          <h3 className="font-sans text-base text-garden-text uppercase tracking-wider">
             {"\u{1F4A7}"} Care History
           </h3>
-          <span className="font-mono text-xs text-moss-500">
+          <span className="font-sans text-base text-garden-textMuted">
             {expandedSection === "care" ? "\u2212" : "+"}
           </span>
         </button>
@@ -310,28 +310,28 @@ export function PlantDetail({
               className="overflow-hidden"
             >
               {sortedCare.length === 0 ? (
-                <div className="bg-moss-800/20 border border-moss-700/20 rounded-xl p-4 text-center">
-                  <p className="font-mono text-xs text-moss-500">No care events logged yet.</p>
+                <div className="bg-garden-greenLight border border-garden-border rounded-xl p-4 text-center">
+                  <p className="font-sans text-base text-garden-textMuted">No care events logged yet.</p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {sortedCare.slice(0, 10).map((event) => (
                     <div
                       key={event.id}
-                      className="bg-moss-800/20 border border-moss-700/15 rounded-lg px-3 py-2 flex items-center gap-3"
+                      className="bg-garden-greenLight border border-garden-border rounded-lg px-3 py-2 flex items-center gap-3"
                     >
                       <span className="text-sm">{CARE_ICONS[event.type] || "\u{1F33F}"}</span>
                       <div className="min-w-0 flex-1">
-                        <p className="font-mono text-[10px] text-parchment-300 capitalize">
+                        <p className="font-sans text-base text-garden-text capitalize">
                           {event.type}
                         </p>
                         {event.notes && (
-                          <p className="font-body text-[10px] text-moss-400 truncate">
+                          <p className="font-sans text-base text-garden-textMuted truncate">
                             {event.notes}
                           </p>
                         )}
                       </div>
-                      <span className="font-mono text-[9px] text-moss-600 whitespace-nowrap">
+                      <span className="font-sans text-sm text-garden-textMuted whitespace-nowrap">
                         {new Date(event.date).toLocaleDateString("en-GB", {
                           day: "numeric",
                           month: "short",
@@ -350,12 +350,12 @@ export function PlantDetail({
           <>
             <button
               onClick={() => toggleSection("knowledge")}
-              className="w-full flex items-center justify-between py-2"
+              className="w-full flex items-center justify-between py-2 min-h-[48px]"
             >
-              <h3 className="font-mono text-[11px] text-parchment-300 uppercase tracking-wider">
+              <h3 className="font-sans text-base text-garden-text uppercase tracking-wider">
                 {"\u{1F4D6}"} Care Guide
               </h3>
-              <span className="font-mono text-xs text-moss-500">
+              <span className="font-sans text-base text-garden-textMuted">
                 {expandedSection === "knowledge" ? "\u2212" : "+"}
               </span>
             </button>
@@ -369,11 +369,11 @@ export function PlantDetail({
                 >
                   {/* This month's task */}
                   {monthlyTask && (
-                    <div className="bg-moss-800/20 border border-moss-700/20 rounded-xl p-4">
-                      <div className="font-mono text-[9px] text-moss-400 uppercase tracking-wider mb-1">
+                    <div className="bg-garden-greenLight border border-garden-border rounded-xl p-4">
+                      <div className="font-sans text-sm text-garden-textMuted uppercase tracking-wider mb-1">
                         This Month
                       </div>
-                      <p className="font-body text-xs text-parchment-300 leading-relaxed">
+                      <p className="font-sans text-base text-garden-text leading-relaxed">
                         {monthlyTask}
                       </p>
                     </div>
@@ -381,29 +381,29 @@ export function PlantDetail({
 
                   {/* Quick stats grid */}
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-moss-800/15 rounded-lg p-3">
-                      <div className="font-mono text-[8px] text-moss-500 uppercase mb-1">
+                    <div className="bg-garden-greenLight rounded-lg p-3">
+                      <div className="font-sans text-sm text-garden-textMuted uppercase mb-1">
                         <Tooltip term="liquid feed">Water</Tooltip>
                       </div>
-                      <p className="font-body text-xs text-parchment-400">{careProfile.wateringNeeds}</p>
+                      <p className="font-sans text-base text-garden-text">{careProfile.wateringNeeds}</p>
                     </div>
-                    <div className="bg-moss-800/15 rounded-lg p-3">
-                      <div className="font-mono text-[8px] text-moss-500 uppercase mb-1">Sun</div>
-                      <p className="font-body text-xs text-parchment-400">{careProfile.sunRequirement}</p>
+                    <div className="bg-garden-greenLight rounded-lg p-3">
+                      <div className="font-sans text-sm text-garden-textMuted uppercase mb-1">Sun</div>
+                      <p className="font-sans text-base text-garden-text">{careProfile.sunRequirement}</p>
                     </div>
-                    <div className="bg-moss-800/15 rounded-lg p-3">
-                      <div className="font-mono text-[8px] text-moss-500 uppercase mb-1">
+                    <div className="bg-garden-greenLight rounded-lg p-3">
+                      <div className="font-sans text-sm text-garden-textMuted uppercase mb-1">
                         <Tooltip term="pH">Soil pH</Tooltip>
                       </div>
-                      <p className="font-body text-xs text-parchment-400">
+                      <p className="font-sans text-base text-garden-text">
                         {careProfile.soilPH.min} - {careProfile.soilPH.max}
                       </p>
                     </div>
-                    <div className="bg-moss-800/15 rounded-lg p-3">
-                      <div className="font-mono text-[8px] text-moss-500 uppercase mb-1">
+                    <div className="bg-garden-greenLight rounded-lg p-3">
+                      <div className="font-sans text-sm text-garden-textMuted uppercase mb-1">
                         <Tooltip term="NPK">Feed</Tooltip>
                       </div>
-                      <p className="font-body text-[10px] text-parchment-400 line-clamp-2">
+                      <p className="font-sans text-base text-garden-text line-clamp-2">
                         {careProfile.feedingSchedule}
                       </p>
                     </div>
@@ -411,17 +411,17 @@ export function PlantDetail({
 
                   {/* Companions */}
                   {companions && (
-                    <div className="bg-moss-800/20 border border-moss-700/20 rounded-xl p-4">
-                      <div className="font-mono text-[9px] text-moss-400 uppercase tracking-wider mb-2">
+                    <div className="bg-garden-greenLight border border-garden-border rounded-xl p-4">
+                      <div className="font-sans text-sm text-garden-textMuted uppercase tracking-wider mb-2">
                         <Tooltip term="companion planting">Companion Planting</Tooltip>
                       </div>
                       {companions.good.length > 0 && (
-                        <p className="font-body text-[11px] text-parchment-400/80 mb-1">
+                        <p className="font-sans text-base text-garden-text mb-1">
                           {"\u2705"} Good: {companions.good.join(", ")}
                         </p>
                       )}
                       {companions.bad.length > 0 && (
-                        <p className="font-body text-[11px] text-parchment-400/60">
+                        <p className="font-sans text-base text-garden-textMuted">
                           {"\u274C"} Avoid: {companions.bad.join(", ")}
                         </p>
                       )}
@@ -430,20 +430,20 @@ export function PlantDetail({
 
                   {/* Common problems */}
                   {careProfile.commonProblems.length > 0 && (
-                    <div className="bg-moss-800/20 border border-moss-700/20 rounded-xl p-4">
-                      <div className="font-mono text-[9px] text-moss-400 uppercase tracking-wider mb-2">
+                    <div className="bg-garden-greenLight border border-garden-border rounded-xl p-4">
+                      <div className="font-sans text-sm text-garden-textMuted uppercase tracking-wider mb-2">
                         Common Problems
                       </div>
                       <div className="space-y-2">
                         {careProfile.commonProblems.map((prob, i) => (
-                          <div key={i} className="border-l-2 border-parchment-600/30 pl-3">
-                            <p className="font-body text-xs text-parchment-300 font-medium">
+                          <div key={i} className="border-l-2 border-garden-border pl-3">
+                            <p className="font-sans text-base text-garden-text font-medium">
                               {prob.problem}
                             </p>
-                            <p className="font-body text-[10px] text-moss-400">
+                            <p className="font-sans text-base text-garden-textMuted">
                               {prob.symptoms}
                             </p>
-                            <p className="font-body text-[10px] text-moss-500">
+                            <p className="font-sans text-base text-garden-textMuted">
                               Fix: {prob.treatment}
                             </p>
                           </div>
@@ -459,32 +459,32 @@ export function PlantDetail({
       </div>
 
       {/* Fixed bottom action bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-night-950/95 border-t border-moss-800/50 backdrop-blur-sm z-40 px-4 py-3">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-garden-border backdrop-blur-sm z-40 px-4 py-3">
         <div className="max-w-2xl mx-auto flex gap-2">
           <button
             onClick={() => logCare("watered")}
             disabled={logging === "watered"}
-            className="flex-1 bg-blue-900/30 border border-blue-700/30 text-blue-300 font-mono text-[10px] py-2.5 rounded-lg active:scale-95 transition-transform disabled:opacity-50"
+            className="flex-1 bg-garden-greenBright text-white font-sans text-base min-h-[48px] py-2.5 rounded-lg active:scale-95 transition-transform disabled:opacity-50 hover:bg-garden-green"
           >
             {logging === "watered" ? "..." : "\u{1F4A7} Water"}
           </button>
           <button
             onClick={() => logCare("fed")}
             disabled={logging === "fed"}
-            className="flex-1 bg-green-900/30 border border-green-700/30 text-green-300 font-mono text-[10px] py-2.5 rounded-lg active:scale-95 transition-transform disabled:opacity-50"
+            className="flex-1 bg-garden-greenBright text-white font-sans text-base min-h-[48px] py-2.5 rounded-lg active:scale-95 transition-transform disabled:opacity-50 hover:bg-garden-green"
           >
             {logging === "fed" ? "..." : "\u{1F33F} Feed"}
           </button>
           <button
             onClick={() => setShowGrowthForm(!showGrowthForm)}
-            className="flex-1 bg-parchment-900/20 border border-parchment-700/30 text-parchment-300 font-mono text-[10px] py-2.5 rounded-lg active:scale-95 transition-transform"
+            className="flex-1 bg-garden-greenBright text-white font-sans text-base min-h-[48px] py-2.5 rounded-lg active:scale-95 transition-transform hover:bg-garden-green"
           >
             {"\u{1F4CF}"} Measure
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={logging === "photo"}
-            className="flex-1 bg-moss-800/40 border border-moss-700/30 text-moss-300 font-mono text-[10px] py-2.5 rounded-lg active:scale-95 transition-transform disabled:opacity-50"
+            className="flex-1 bg-garden-greenBright text-white font-sans text-base min-h-[48px] py-2.5 rounded-lg active:scale-95 transition-transform disabled:opacity-50 hover:bg-garden-green"
           >
             {logging === "photo" ? "..." : "\u{1F4F7} Photo"}
           </button>
@@ -509,53 +509,53 @@ export function PlantDetail({
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25 }}
-            className="fixed bottom-16 left-0 right-0 bg-night-950/98 border-t border-moss-700/40 z-30 px-4 py-4"
+            className="fixed bottom-16 left-0 right-0 bg-white border-t border-garden-border z-30 px-4 py-4"
           >
             <div className="max-w-2xl mx-auto space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="font-mono text-[11px] text-parchment-300 uppercase tracking-wider">
+                <h3 className="font-sans text-base text-garden-text uppercase tracking-wider">
                   Log Growth
                 </h3>
                 <button
                   onClick={() => setShowGrowthForm(false)}
-                  className="font-mono text-xs text-moss-500"
+                  className="font-sans text-base text-garden-textMuted min-h-[48px] min-w-[48px]"
                 >
                   {"\u2715"}
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="font-mono text-[9px] text-moss-500 uppercase">Height (cm)</label>
+                  <label className="font-sans text-sm text-garden-textMuted uppercase">Height (cm)</label>
                   <input
                     type="number"
                     value={growthForm.heightCm}
                     onChange={(e) => setGrowthForm({ ...growthForm, heightCm: e.target.value })}
-                    className="w-full bg-night-900/60 border border-moss-800/50 rounded-lg px-3 py-2 text-parchment-300 font-mono text-sm mt-1"
+                    className="w-full bg-garden-offwhite border border-garden-border rounded-lg px-3 py-2 text-garden-text font-sans text-base mt-1 min-h-[48px]"
                     placeholder="0"
                   />
                 </div>
                 <div>
-                  <label className="font-mono text-[9px] text-moss-500 uppercase">Leaves</label>
+                  <label className="font-sans text-sm text-garden-textMuted uppercase">Leaves</label>
                   <input
                     type="number"
                     value={growthForm.leafCount}
                     onChange={(e) => setGrowthForm({ ...growthForm, leafCount: e.target.value })}
-                    className="w-full bg-night-900/60 border border-moss-800/50 rounded-lg px-3 py-2 text-parchment-300 font-mono text-sm mt-1"
+                    className="w-full bg-garden-offwhite border border-garden-border rounded-lg px-3 py-2 text-garden-text font-sans text-base mt-1 min-h-[48px]"
                     placeholder="0"
                   />
                 </div>
               </div>
               <div>
-                <label className="font-mono text-[9px] text-moss-500 uppercase">Health</label>
+                <label className="font-sans text-sm text-garden-textMuted uppercase">Health</label>
                 <div className="flex gap-2 mt-1">
                   {[1, 2, 3, 4, 5].map((score) => (
                     <button
                       key={score}
                       onClick={() => setGrowthForm({ ...growthForm, healthScore: score })}
-                      className={`w-10 h-10 rounded-lg font-mono text-sm transition-colors ${
+                      className={`w-12 h-12 min-h-[48px] min-w-[48px] rounded-lg font-sans text-base transition-colors ${
                         growthForm.healthScore >= score
-                          ? "bg-moss-600 text-parchment-200"
-                          : "bg-moss-800/30 text-moss-600"
+                          ? "bg-garden-greenBright text-white"
+                          : "bg-garden-greenLight text-garden-textMuted"
                       }`}
                     >
                       {score}
@@ -566,7 +566,7 @@ export function PlantDetail({
               <button
                 onClick={submitGrowth}
                 disabled={logging === "growth"}
-                className="w-full bg-moss-700 hover:bg-moss-600 text-parchment-200 font-mono text-sm py-2.5 rounded-lg transition-colors disabled:opacity-50"
+                className="w-full bg-garden-greenBright hover:bg-garden-green text-white font-sans text-base py-2.5 rounded-lg transition-colors disabled:opacity-50 min-h-[48px]"
               >
                 {logging === "growth" ? "Saving..." : "Save Measurement"}
               </button>
@@ -591,7 +591,7 @@ export function PlantDetail({
               className="max-w-full max-h-full object-contain rounded-lg"
             />
             <button
-              className="absolute top-6 right-6 font-mono text-sm text-white/60 hover:text-white transition-colors"
+              className="absolute top-6 right-6 font-sans text-base text-white/60 hover:text-white transition-colors min-h-[48px] min-w-[48px]"
               onClick={() => setLightboxUrl(null)}
             >
               Close

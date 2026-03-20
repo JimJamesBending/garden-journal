@@ -80,13 +80,13 @@ export function WeatherDashboard({ weather }: { weather: WeatherData | null }) {
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.7 }}
-          className="bg-moss-800/40 rounded-2xl border border-moss-700/30 overflow-hidden"
+          className="bg-white rounded-2xl border border-garden-border overflow-hidden"
         >
           {/* Frost alert banner */}
           {advice.frostAlert && (
-            <div className="px-4 py-2.5 bg-red-900/30 border-b border-red-700/40 flex items-center gap-2">
+            <div className="px-4 py-2.5 bg-red-50 border-b border-red-200 flex items-center gap-2">
               <span className="text-sm animate-pulse">{"\u{26A0}\u{FE0F}"}</span>
-              <p className="font-mono text-[11px] text-red-300">
+              <p className="font-sans text-base text-red-700">
                 <Tooltip term="hardy" definition="A plant that can survive frost and cold winters outdoors without protection.">
                   Frost Alert
                 </Tooltip>
@@ -98,7 +98,7 @@ export function WeatherDashboard({ weather }: { weather: WeatherData | null }) {
           {/* Main strip - clickable to expand */}
           <button
             onClick={() => setExpanded(!expanded)}
-            className="w-full px-4 py-4 flex items-center justify-between hover:bg-moss-800/20 transition-colors"
+            className="w-full px-4 py-4 flex items-center justify-between hover:bg-garden-greenLight transition-colors"
           >
             {/* Left: current conditions */}
             <div className="flex items-center gap-3">
@@ -110,10 +110,10 @@ export function WeatherDashboard({ weather }: { weather: WeatherData | null }) {
                 {getWeatherIcon(current.condition)}
               </motion.span>
               <div className="text-left">
-                <span className="font-display text-2xl text-parchment-200 font-light">
+                <span className="font-sans font-bold text-2xl text-garden-text">
                   {Math.round(current.tempCurrent)}{"\u00B0"}C
                 </span>
-                <span className="font-mono text-[10px] text-moss-400 block capitalize">
+                <span className="font-sans text-base text-garden-textMuted block capitalize">
                   {current.condition.replace("-", " ")} in Bristol
                 </span>
               </div>
@@ -124,13 +124,13 @@ export function WeatherDashboard({ weather }: { weather: WeatherData | null }) {
               {daily.slice(0, 5).map((day, i) => (
                 <div
                   key={day.date}
-                  className={`text-center ${day.frostRisk ? "text-red-300" : ""}`}
+                  className={`text-center ${day.frostRisk ? "text-red-700" : ""}`}
                 >
-                  <span className="font-mono text-[9px] text-moss-500 block">
+                  <span className="font-sans text-sm text-garden-textMuted block">
                     {getDayName(day.date, i)}
                   </span>
                   <span className="text-sm block">{getWeatherIcon(day.condition)}</span>
-                  <span className="font-mono text-[10px] text-parchment-300">
+                  <span className="font-sans text-base text-garden-text">
                     {Math.round(day.tempMax)}{"\u00B0"}
                   </span>
                 </div>
@@ -140,16 +140,16 @@ export function WeatherDashboard({ weather }: { weather: WeatherData | null }) {
             {/* Right: soil + expand indicator */}
             <div className="flex items-center gap-4">
               <div className="hidden sm:block text-right">
-                <span className="font-mono text-[9px] text-moss-500 block uppercase">
+                <span className="font-sans text-sm text-garden-textMuted block uppercase">
                   Soil
                 </span>
-                <span className="font-mono text-[11px] text-parchment-300">
+                <span className="font-sans text-base text-garden-text">
                   {Math.round(current.soilTemp10cm)}{"\u00B0"}C
                 </span>
               </div>
               <motion.span
                 animate={{ rotate: expanded ? 180 : 0 }}
-                className="text-moss-400 text-sm"
+                className="text-garden-textMuted text-sm"
               >
                 {"\u25BC"}
               </motion.span>
@@ -162,66 +162,66 @@ export function WeatherDashboard({ weather }: { weather: WeatherData | null }) {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="border-t border-moss-700/30"
+              className="border-t border-garden-border"
             >
               {/* Detailed stats grid */}
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 p-4">
-                <div className="bg-moss-900/40 rounded-xl p-3 text-center">
-                  <span className="font-mono text-[9px] text-moss-500 uppercase block">High/Low</span>
-                  <span className="font-mono text-sm text-parchment-300">
+                <div className="bg-garden-greenLight rounded-xl p-3 text-center">
+                  <span className="font-sans text-sm text-garden-textMuted uppercase block">High/Low</span>
+                  <span className="font-sans text-base text-garden-text">
                     {Math.round(current.tempMax)}{"\u00B0"}/{Math.round(current.tempMin)}{"\u00B0"}
                   </span>
                 </div>
-                <div className="bg-moss-900/40 rounded-xl p-3 text-center">
-                  <span className="font-mono text-[9px] text-moss-500 uppercase block">Humidity</span>
-                  <span className="font-mono text-sm text-parchment-300">{current.humidity}%</span>
+                <div className="bg-garden-greenLight rounded-xl p-3 text-center">
+                  <span className="font-sans text-sm text-garden-textMuted uppercase block">Humidity</span>
+                  <span className="font-sans text-base text-garden-text">{current.humidity}%</span>
                 </div>
-                <div className="bg-moss-900/40 rounded-xl p-3 text-center">
-                  <span className="font-mono text-[9px] text-moss-500 uppercase block">Wind</span>
-                  <span className="font-mono text-sm text-parchment-300">{Math.round(current.windSpeed)} km/h</span>
+                <div className="bg-garden-greenLight rounded-xl p-3 text-center">
+                  <span className="font-sans text-sm text-garden-textMuted uppercase block">Wind</span>
+                  <span className="font-sans text-base text-garden-text">{Math.round(current.windSpeed)} km/h</span>
                 </div>
-                <div className="bg-moss-900/40 rounded-xl p-3 text-center">
-                  <span className="font-mono text-[9px] text-moss-500 uppercase block">UV</span>
-                  <span className="font-mono text-sm text-parchment-300">{current.uvIndex}</span>
+                <div className="bg-garden-greenLight rounded-xl p-3 text-center">
+                  <span className="font-sans text-sm text-garden-textMuted uppercase block">UV</span>
+                  <span className="font-sans text-base text-garden-text">{current.uvIndex}</span>
                 </div>
-                <div className="bg-moss-900/40 rounded-xl p-3 text-center">
-                  <span className="font-mono text-[9px] text-moss-500 uppercase block">
+                <div className="bg-garden-greenLight rounded-xl p-3 text-center">
+                  <span className="font-sans text-sm text-garden-textMuted uppercase block">
                     <Tooltip term="pH">Soil</Tooltip>
                   </span>
-                  <span className="font-mono text-sm text-parchment-300">{Math.round(current.soilTemp10cm)}{"\u00B0"}C</span>
+                  <span className="font-sans text-base text-garden-text">{Math.round(current.soilTemp10cm)}{"\u00B0"}C</span>
                 </div>
-                <div className="bg-moss-900/40 rounded-xl p-3 text-center">
-                  <span className="font-mono text-[9px] text-moss-500 uppercase block">Rain</span>
-                  <span className="font-mono text-sm text-parchment-300">{current.precipitation}mm</span>
+                <div className="bg-garden-greenLight rounded-xl p-3 text-center">
+                  <span className="font-sans text-sm text-garden-textMuted uppercase block">Rain</span>
+                  <span className="font-sans text-base text-garden-text">{current.precipitation}mm</span>
                 </div>
               </div>
 
               {/* Watering advice */}
               <div className="px-4 pb-3 flex items-start gap-2">
                 <span className="text-sm">{"\u{1F4A7}"}</span>
-                <p className="font-body text-xs text-parchment-400/70">{advice.watering}</p>
+                <p className="font-sans text-base text-garden-textMuted">{advice.watering}</p>
               </div>
 
               {/* Sunrise/sunset */}
-              <div className="px-4 pb-4 flex items-center justify-between font-mono text-[10px] text-moss-400">
+              <div className="px-4 pb-4 flex items-center justify-between font-sans text-base text-garden-textMuted">
                 <span>{"\u{1F305}"} {current.sunrise}</span>
-                <div className="flex-1 mx-3 h-px bg-gradient-to-r from-parchment-600/20 via-parchment-400/40 to-parchment-600/20" />
+                <div className="flex-1 mx-3 h-px bg-garden-border" />
                 <span>{"\u{1F307}"} {current.sunset}</span>
               </div>
 
               {/* Gardening conditions */}
               <div className="px-4 pb-4">
-                <p className="font-mono text-[9px] text-moss-500 uppercase tracking-wider mb-2">
+                <p className="font-sans text-sm text-garden-textMuted uppercase tracking-wider mb-2">
                   Gardening Conditions
                 </p>
                 <div className="space-y-1.5">
                   {daily.slice(0, 3).map((day, i) => (
-                    <div key={day.date} className="flex items-center gap-2 text-xs">
-                      <span className="font-mono text-[10px] text-moss-400 w-12">
+                    <div key={day.date} className="flex items-center gap-2 text-base">
+                      <span className="font-sans text-base text-garden-textMuted w-12">
                         {getDayName(day.date, i)}
                       </span>
                       <span className="text-sm">{getWeatherIcon(day.condition)}</span>
-                      <span className="font-body text-parchment-400/60 flex-1 text-[11px]">
+                      <span className="font-sans text-garden-textMuted flex-1 text-base">
                         {day.gardeningContext || ""}
                       </span>
                     </div>

@@ -20,11 +20,11 @@ interface PlantCardProps {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  sowed: "bg-earth-600/80 text-earth-200",
-  germinated: "bg-moss-600/80 text-moss-100",
-  transplanted: "bg-moss-500/80 text-moss-100",
-  flowering: "bg-parchment-600/80 text-parchment-100",
-  harvested: "bg-parchment-500/80 text-parchment-100",
+  sowed: "bg-amber-100 text-amber-800",
+  germinated: "bg-garden-greenLight text-garden-green",
+  transplanted: "bg-green-100 text-green-800",
+  flowering: "bg-pink-100 text-pink-800",
+  harvested: "bg-orange-100 text-orange-800",
 };
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -56,7 +56,7 @@ export function PlantCard({
     .filter((g) => g.heightCm !== null)
     .map((g) => ({ date: g.date, height: g.heightCm as number }));
 
-  const statusStyle = STATUS_STYLES[latestStatus] || "bg-moss-700/80 text-moss-200";
+  const statusStyle = STATUS_STYLES[latestStatus] || "bg-gray-100 text-gray-700";
   const days = daysSince(plant.sowDate);
 
   return (
@@ -66,7 +66,7 @@ export function PlantCard({
       transition={{ delay: index * 0.05, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       whileTap={{ scale: 0.97 }}
       onClick={() => onSelect(plant.id)}
-      className="w-full text-left rounded-xl overflow-hidden border border-moss-700/30 hover:border-moss-600/40 transition-colors"
+      className="w-full text-left rounded-xl overflow-hidden border border-garden-border hover:border-garden-greenBright transition-colors"
     >
       {/* Hero photo with blurred background */}
       <div className="relative aspect-[4/3] overflow-hidden">
@@ -89,22 +89,22 @@ export function PlantCard({
           </>
         ) : (
           /* Illustrated "needs a photo" fallback */
-          <div className="w-full h-full bg-gradient-to-br from-moss-800 via-moss-850 to-moss-900 flex flex-col items-center justify-center gap-1.5">
-            <span className="text-4xl opacity-20">
+          <div className="w-full h-full bg-garden-greenLight flex flex-col items-center justify-center gap-1.5">
+            <span className="text-4xl opacity-40">
               {CATEGORY_ICONS[plant.category] || "\u{1F331}"}
             </span>
-            <span className="font-mono text-[9px] text-moss-500 uppercase tracking-wider">
+            <span className="font-sans text-sm text-garden-textMuted uppercase tracking-wider">
               Needs a photo!
             </span>
             <span className="text-sm opacity-25">{"\u{1F4F7}"}</span>
           </div>
         )}
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-moss-950/80 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
         {/* Status badge */}
         <div className="absolute top-2 left-2">
-          <span className={`inline-block font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full backdrop-blur-sm ${statusStyle}`}>
+          <span className={`inline-block font-sans text-sm uppercase tracking-wider px-2 py-0.5 rounded-full backdrop-blur-sm ${statusStyle}`}>
             {latestStatus === "flowering" && (
               <motion.span
                 className="inline-block mr-0.5"
@@ -121,7 +121,7 @@ export function PlantCard({
         {/* Photo count */}
         {photoCount > 0 && (
           <div className="absolute top-2 right-2">
-            <span className="font-mono text-[9px] text-white/70 bg-black/40 backdrop-blur-sm px-1.5 py-0.5 rounded-full">
+            <span className="font-sans text-sm text-white/90 bg-black/40 backdrop-blur-sm px-1.5 py-0.5 rounded-full">
               {"\u{1F4F7}"} {photoCount}
             </span>
           </div>
@@ -129,23 +129,23 @@ export function PlantCard({
 
         {/* Plant name at bottom of photo */}
         <div className="absolute bottom-0 left-0 right-0 p-2.5">
-          <h3 className="font-display text-base text-parchment-200 truncate">
+          <h3 className="font-sans font-bold text-base text-white truncate">
             {plant.commonName}
           </h3>
         </div>
       </div>
 
       {/* Content */}
-      <div className="bg-moss-900/50 backdrop-blur-sm p-3">
+      <div className="bg-white p-3">
         <div className="flex items-start justify-between mb-1">
           <div className="min-w-0">
             {plant.variety && (
-              <p className="font-mono text-[9px] text-moss-400 truncate">
+              <p className="font-sans text-sm text-garden-textMuted truncate">
                 {plant.variety}
               </p>
             )}
           </div>
-          <span className="font-mono text-[9px] text-moss-500 whitespace-nowrap ml-2">
+          <span className="font-sans text-sm text-garden-textMuted whitespace-nowrap ml-2">
             {days}d
           </span>
         </div>

@@ -14,8 +14,8 @@ interface QuickActionsProps {
 }
 
 export function QuickActions({ plants, logs, onRefresh, onShowPhotos, onShowWizard }: QuickActionsProps) {
-  const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<"menu" | "water" | "feed" | null>(null);
+  const [activeTab, setActiveTab] = useState<"home" | "photo" | "plants" | "settings">("home");
+  const [mode, setMode] = useState<"water" | "feed" | null>(null);
   const [logging, setLogging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -41,7 +41,6 @@ export function QuickActions({ plants, logs, onRefresh, onShowPhotos, onShowWiza
     } catch {}
     setLogging(false);
     setMode(null);
-    setOpen(false);
   };
 
   const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,28 +72,56 @@ export function QuickActions({ plants, logs, onRefresh, onShowPhotos, onShowWiza
       onRefresh();
     } catch {}
     setLogging(false);
-    setOpen(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const actions = [
-    { id: "water", label: "Water", icon: "\u{1F4A7}", color: "bg-blue-900/40 border-blue-700/30 text-blue-300" },
-    { id: "feed", label: "Feed", icon: "\u{1F33F}", color: "bg-green-900/40 border-green-700/30 text-green-300" },
-    { id: "photo", label: "Photo", icon: "\u{1F4F7}", color: "bg-parchment-900/30 border-parchment-700/30 text-parchment-300" },
-    { id: "gallery", label: "Gallery", icon: "\u{1F5BC}\uFE0F", color: "bg-moss-800/40 border-moss-700/30 text-moss-300" },
+  const navItems = [
+    {
+      id: "home" as const,
+      label: "Home",
+      icon: "\u{1F3E0}",
+      action: () => setActiveTab("home"),
+    },
+    {
+      id: "photo" as const,
+      label: "Add Photo",
+      icon: "\u{1F4F7}",
+      action: () => {
+        if (onShowWizard) {
+          onShowWizard();
+        } else {
+          fileInputRef.current?.click();
+        }
+      },
+    },
+    {
+      id: "plants" as const,
+      label: "Plants",
+      icon: "\u{1F331}",
+      action: () => {
+        onShowPhotos();
+        setActiveTab("plants");
+      },
+    },
+    {
+      id: "settings" as const,
+      label: "Settings",
+      icon: "\u2699\uFE0F",
+      action: () => setActiveTab("settings"),
+    },
   ];
 
   return (
     <>
-      {/* Overlay */}
+      {/* Overlay for plant picker */}
       <AnimatePresence>
-        {open && (
+        {mode && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-40"
-            onClick={() => { setOpen(false); setMode(null); }}
+            className="fixed inset-0 bg-black/30 z-40"
+            onClick={() => setMode(null)}
           />
         )}
       </AnimatePresence>
@@ -106,9 +133,9 @@ export function QuickActions({ plants, logs, onRefresh, onShowPhotos, onShowWiza
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-24 left-4 right-4 z-50 bg-night-950/98 border border-moss-700/40 rounded-2xl p-4 max-h-[60vh] overflow-y-auto"
+            className="fixed bottom-[72px] left-4 right-4 z-50 bg-white border border-garden-border rounded-2xl p-4 max-h-[60vh] overflow-y-auto shadow-lg"
           >
-            <h3 className="font-mono text-[11px] text-parchment-300 uppercase tracking-wider mb-3">
+            <h3 className="font-sans text-sm font-semibold text-garden-text uppercase tracking-wider mb-3">
               {mode === "water" ? "\u{1F4A7} Which plant?" : "\u{1F33F} Which plant?"}
             </h3>
             <div className="grid grid-cols-3 gap-2">
@@ -119,18 +146,18 @@ export function QuickActions({ plants, logs, onRefresh, onShowPhotos, onShowWiza
                     key={plant.id}
                     onClick={() => logCare(plant.id, mode === "water" ? "watered" : "fed")}
                     disabled={logging}
-                    className="bg-moss-800/30 border border-moss-700/20 rounded-xl p-2 text-center active:scale-95 transition-transform disabled:opacity-50"
+                    className="bg-garden-offwhite border border-garden-border rounded-xl p-2 text-center active:scale-95 transition-transform disabled:opacity-50 min-h-[48px]"
                   >
                     <div className="w-full aspect-square rounded-lg overflow-hidden mb-1.5">
                       {photo ? (
                         <img src={photo} alt={plant.commonName} className="w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full bg-moss-800 flex items-center justify-center">
+                        <div className="w-full h-full bg-garden-greenLight flex items-center justify-center">
                           <span className="text-lg opacity-40">{"\u{1F331}"}</span>
                         </div>
                       )}
                     </div>
-                    <p className="font-mono text-[9px] text-parchment-300 truncate">
+                    <p className="font-sans text-sm text-garden-text truncate">
                       {plant.commonName}
                     </p>
                   </button>
@@ -141,46 +168,29 @@ export function QuickActions({ plants, logs, onRefresh, onShowPhotos, onShowWiza
         )}
       </AnimatePresence>
 
-      {/* FAB and action buttons */}
-      <div className="fixed bottom-6 right-4 z-50 flex flex-col-reverse items-end gap-2">
-        {/* Action buttons (shown when open) */}
-        <AnimatePresence>
-          {open && !mode && (
-            <>
-              {actions.map((action, i) => (
-                <motion.button
-                  key={action.id}
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0, opacity: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  onClick={() => {
-                    if (action.id === "water") setMode("water");
-                    else if (action.id === "feed") setMode("feed");
-                    else if (action.id === "photo") { if (onShowWizard) { onShowWizard(); setOpen(false); } else { fileInputRef.current?.click(); } }
-                    else if (action.id === "gallery") { onShowPhotos(); setOpen(false); }
-                  }}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-full border ${action.color} backdrop-blur-sm shadow-lg active:scale-95 transition-transform`}
-                >
-                  <span className="text-sm">{action.icon}</span>
-                  <span className="font-mono text-[10px] uppercase tracking-wider">
-                    {action.label}
-                  </span>
-                </motion.button>
-              ))}
-            </>
-          )}
-        </AnimatePresence>
-
-        {/* Main FAB */}
-        <motion.button
-          onClick={() => { setOpen(!open); setMode(null); }}
-          className="w-14 h-14 rounded-full bg-moss-600 hover:bg-moss-500 text-parchment-200 shadow-lg shadow-moss-900/50 flex items-center justify-center active:scale-90 transition-all"
-          animate={{ rotate: open ? 45 : 0 }}
-        >
-          <span className="text-2xl font-light">+</span>
-        </motion.button>
-      </div>
+      {/* Fixed bottom navigation bar */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-garden-border">
+        <div className="flex items-center justify-around h-[68px] max-w-lg mx-auto px-2">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={item.action}
+              className={`flex flex-col items-center justify-center min-h-[48px] min-w-[64px] px-2 py-1.5 rounded-lg transition-colors ${
+                activeTab === item.id
+                  ? "text-garden-greenBright"
+                  : "text-garden-textMuted hover:text-garden-text"
+              }`}
+            >
+              <span className="text-2xl leading-none">{item.icon}</span>
+              <span className={`font-sans text-sm mt-1 ${
+                activeTab === item.id ? "font-semibold" : ""
+              }`}>
+                {item.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      </nav>
 
       <input
         ref={fileInputRef}

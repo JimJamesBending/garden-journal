@@ -95,12 +95,12 @@ export function HeroSection({
               aria-hidden
               className="absolute inset-0 w-full h-full object-cover scale-110"
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-moss-950/70 via-moss-950/40 to-moss-950/80" />
+            <div className="absolute inset-0 bg-white/60" />
           </>
         ) : (
           <>
-            <div className="absolute inset-0 bg-gradient-to-b from-moss-950 via-moss-900 to-moss-900" />
-            <div className="absolute inset-0 bg-gradient-to-t from-moss-900/90 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-white" />
+            <div className="absolute inset-0 bg-garden-greenLight/50" />
           </>
         )}
       </motion.div>
@@ -114,7 +114,7 @@ export function HeroSection({
           <motion.img
             src={heroForeground(heroPhoto.cloudinaryUrl)}
             alt="Garden overview"
-            className="w-[80vw] sm:w-[60vw] md:w-[45vw] max-w-lg h-auto rounded-3xl shadow-2xl shadow-black/60 object-cover opacity-20 sm:opacity-25"
+            className="w-[80vw] sm:w-[60vw] md:w-[45vw] max-w-lg h-auto rounded-3xl shadow-2xl shadow-black/20 object-cover opacity-20 sm:opacity-25"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 0.25, scale: 1 }}
             transition={{ delay: 0.5, duration: 1.2 }}
@@ -141,7 +141,7 @@ export function HeroSection({
           >
             {"\u{1F9A6}"}
           </motion.span>
-          <p className="font-body text-base sm:text-lg text-parchment-400/80 mt-2">
+          <p className="font-sans text-base sm:text-lg text-garden-textMuted mt-2">
             {getGreeting()}!
           </p>
         </motion.div>
@@ -151,16 +151,16 @@ export function HeroSection({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.8 }}
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-moss-600/40 bg-moss-800/50 backdrop-blur-sm mb-6"
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-garden-border bg-garden-greenLight backdrop-blur-sm mb-6"
         >
           <span className="text-sm">{getSeasonEmoji()}</span>
-          <span className="font-mono text-xs text-moss-300 uppercase tracking-widest">
+          <span className="font-sans text-base text-garden-textMuted uppercase tracking-widest">
             {season} {new Date().getFullYear()}
           </span>
           {currentTemp !== undefined && (
             <>
-              <span className="text-moss-600">|</span>
-              <span className="font-mono text-xs text-parchment-400">
+              <span className="text-garden-border">|</span>
+              <span className="font-sans text-base text-garden-text">
                 {getWeatherIcon(weatherCondition)} {Math.round(currentTemp)}{"\u00B0"}C
               </span>
             </>
@@ -169,7 +169,7 @@ export function HeroSection({
 
         {/* Title */}
         <motion.h1
-          className="font-display text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-light text-parchment-200 mb-4 leading-[0.9]"
+          className="font-sans font-bold text-5xl sm:text-6xl md:text-7xl lg:text-8xl text-garden-text mb-4 leading-[0.9]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4, duration: 1.2 }}
@@ -209,7 +209,7 @@ export function HeroSection({
 
         {/* Subtitle - friendly otter companion */}
         <motion.p
-          className="font-body text-base md:text-lg text-parchment-400/80 mb-10 max-w-lg mx-auto"
+          className="font-sans text-base md:text-lg text-garden-textMuted mb-10 max-w-lg mx-auto"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.5, duration: 0.8 }}
@@ -220,38 +220,38 @@ export function HeroSection({
 
         {/* Stats */}
         <motion.div
-          className="flex justify-center gap-8 sm:gap-10 font-mono text-xs uppercase tracking-[0.2em]"
+          className="flex justify-center gap-8 sm:gap-10 font-sans text-base uppercase tracking-[0.2em]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.8, duration: 0.8 }}
         >
           <div className="text-center">
             <motion.span
-              className="block text-2xl text-parchment-300 font-display font-light"
+              className="block text-2xl text-garden-text font-sans font-bold"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 2, duration: 0.5 }}
             >
               {totalPlants}
             </motion.span>
-            <span className="text-moss-500">Plants</span>
+            <span className="text-garden-textMuted">Plants</span>
           </div>
-          <div className="w-px bg-moss-700/50" />
+          <div className="w-px bg-garden-border" />
           <div className="text-center">
             <motion.span
-              className="block text-2xl text-parchment-300 font-display font-light"
+              className="block text-2xl text-garden-text font-sans font-bold"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 2.1, duration: 0.5 }}
             >
               {totalPhotos}
             </motion.span>
-            <span className="text-moss-500">Photos</span>
+            <span className="text-garden-textMuted">Photos</span>
           </div>
-          <div className="w-px bg-moss-700/50" />
+          <div className="w-px bg-garden-border" />
           <div className="text-center">
             <motion.span
-              className="block text-2xl text-parchment-300 font-display font-light"
+              className="block text-2xl text-garden-text font-sans font-bold"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 2.2, duration: 0.5 }}
@@ -261,7 +261,7 @@ export function HeroSection({
                   (1000 * 60 * 60 * 24)
               )}
             </motion.span>
-            <span className="text-moss-500">Days</span>
+            <span className="text-garden-textMuted">Days</span>
           </div>
         </motion.div>
       </motion.div>
@@ -273,15 +273,15 @@ export function HeroSection({
         animate={{ opacity: 1 }}
         transition={{ delay: 2.5, duration: 0.8 }}
       >
-        <span className="font-mono text-[10px] text-moss-500 uppercase tracking-[0.3em]">
+        <span className="font-sans text-base text-garden-textMuted uppercase tracking-[0.3em]">
           Explore the garden
         </span>
         <motion.div
-          className="w-5 h-8 rounded-full border border-moss-600/40 flex justify-center pt-1.5"
+          className="w-5 h-8 rounded-full border border-garden-border flex justify-center pt-1.5"
           animate={{ y: [0, 5, 0] }}
           transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
         >
-          <div className="w-1 h-2 rounded-full bg-parchment-500/50" />
+          <div className="w-1 h-2 rounded-full bg-garden-textMuted/50" />
         </motion.div>
       </motion.div>
     </section>

@@ -53,11 +53,11 @@ export function QuickStats({ plants, logs, care, growth }: QuickStatsProps) {
       {stats.map((stat) => (
         <div
           key={stat.label}
-          className="bg-moss-800/30 border border-moss-700/20 rounded-xl py-3 text-center"
+          className="bg-garden-greenLight border border-garden-border rounded-xl py-3 text-center"
         >
           <div className="text-sm mb-0.5">{stat.icon}</div>
-          <div className="font-display text-xl text-parchment-200">{stat.value}</div>
-          <div className="font-mono text-[8px] text-moss-500 uppercase tracking-wider">
+          <div className="font-sans font-bold text-xl text-garden-text">{stat.value}</div>
+          <div className="font-sans text-sm text-garden-textMuted uppercase tracking-wider">
             {stat.label}
           </div>
         </div>

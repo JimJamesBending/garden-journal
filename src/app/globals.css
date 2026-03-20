@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --background: #0a1f0a;
-  --foreground: #e8d5b0;
+  --background: #ffffff;
+  --foreground: #1a1a1a;
 }
 
 body {
@@ -12,47 +12,26 @@ body {
   background: var(--background);
 }
 
-/* Subtle paper texture overlay */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 50;
-  opacity: 0.03;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23d4b87a'/%3E%3Crect width='1' height='1' fill='%23c4a05a'/%3E%3C/svg%3E");
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-}
-::-webkit-scrollbar-track {
-  background: #0a1f0a;
-}
-::-webkit-scrollbar-thumb {
-  background: #2d6b2d;
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #4a8a4a;
-}
-
-/* Status pill colours */
+/* High-contrast status badges */
 .status-sowed {
-  @apply bg-earth-700 text-earth-200;
+  @apply bg-amber-100 text-amber-900 border border-amber-300 font-semibold;
 }
 .status-germinated {
-  @apply bg-moss-700 text-moss-200;
+  @apply bg-green-100 text-green-900 border border-green-300 font-semibold;
 }
 .status-transplanted {
-  @apply bg-moss-600 text-moss-100;
+  @apply bg-blue-100 text-blue-900 border border-blue-300 font-semibold;
 }
 .status-flowering {
-  @apply bg-parchment-700 text-parchment-200;
+  @apply bg-pink-100 text-pink-900 border border-pink-300 font-semibold;
 }
 .status-harvested {
-  @apply bg-parchment-600 text-parchment-100;
+  @apply bg-orange-100 text-orange-900 border border-orange-300 font-semibold;
+}
+
+/* Touch target minimum size */
+.touch-target {
+  @apply min-h-[48px] min-w-[48px];
 }
 
 @layer utilities {

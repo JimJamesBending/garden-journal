@@ -58,12 +58,12 @@ export default async function PlantPage({
   return (
     <div>
       {/* Breadcrumb */}
-      <nav className="mb-6 font-mono text-xs text-moss-600">
-        <Link href="/" className="hover:text-parchment-400 transition-colors">
+      <nav className="mb-6 font-sans text-base text-garden-textMuted">
+        <Link href="/" className="hover:text-garden-green transition-colors">
           Plants
         </Link>
         <span className="mx-2">/</span>
-        <span className="text-parchment-500">{plant.commonName}</span>
+        <span className="text-garden-text">{plant.commonName}</span>
       </nav>
 
       {/* Plant header */}
@@ -72,16 +72,16 @@ export default async function PlantPage({
           <span className="text-3xl">{emoji}</span>
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-1">
-              <h2 className="font-display text-4xl font-light text-parchment-200">
+              <h2 className="font-sans font-bold text-4xl font-light text-garden-text">
                 {plant.commonName}
               </h2>
               <StatusPill status={status} />
             </div>
-            <p className="font-body text-lg text-parchment-500 italic">
+            <p className="font-sans text-lg text-garden-textMuted italic">
               {plant.variety}
             </p>
             {plant.latinName && (
-              <p className="font-body text-sm text-moss-500 italic">
+              <p className="font-sans text-sm text-garden-textMuted italic">
                 {plant.latinName}
               </p>
             )}
@@ -89,32 +89,32 @@ export default async function PlantPage({
         </div>
 
         {/* Metadata grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-night-900/40 border border-moss-800/30 rounded-lg p-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-garden-greenLight border border-garden-border rounded-lg p-4">
           <div>
-            <p className="font-mono text-[10px] text-moss-600 uppercase tracking-wider mb-1">
+            <p className="font-sans text-base text-garden-textMuted uppercase tracking-wider mb-1">
               Sowed
             </p>
-            <p className="font-body text-sm text-parchment-400">{sowDate}</p>
+            <p className="font-sans text-sm text-garden-text">{sowDate}</p>
           </div>
           <div>
-            <p className="font-mono text-[10px] text-moss-600 uppercase tracking-wider mb-1">
+            <p className="font-sans text-base text-garden-textMuted uppercase tracking-wider mb-1">
               Day
             </p>
-            <p className="font-body text-sm text-parchment-400">{days}</p>
+            <p className="font-sans text-sm text-garden-text">{days}</p>
           </div>
           <div>
-            <p className="font-mono text-[10px] text-moss-600 uppercase tracking-wider mb-1">
+            <p className="font-sans text-base text-garden-textMuted uppercase tracking-wider mb-1">
               Location
             </p>
-            <p className="font-body text-sm text-parchment-400 capitalize">
+            <p className="font-sans text-sm text-garden-text capitalize">
               {plant.location}
             </p>
           </div>
           <div>
-            <p className="font-mono text-[10px] text-moss-600 uppercase tracking-wider mb-1">
+            <p className="font-sans text-base text-garden-textMuted uppercase tracking-wider mb-1">
               Confidence
             </p>
-            <p className="font-body text-sm text-parchment-400 capitalize">
+            <p className="font-sans text-sm text-garden-text capitalize">
               {plant.confidence}
             </p>
           </div>
@@ -122,8 +122,8 @@ export default async function PlantPage({
 
         {/* Notes */}
         {plant.notes && (
-          <div className="mt-4 bg-night-900/20 border-l-2 border-moss-700/50 pl-4 py-2">
-            <p className="font-body text-sm text-parchment-500">
+          <div className="mt-4 bg-garden-greenLight border-l-2 border-garden-greenBright pl-4 py-2">
+            <p className="font-sans text-sm text-garden-textMuted">
               {plant.notes}
             </p>
           </div>
@@ -133,12 +133,12 @@ export default async function PlantPage({
       {/* Photo timeline */}
       <section>
         <div className="flex items-center justify-between mb-6">
-          <h3 className="font-display text-2xl text-parchment-300">
+          <h3 className="font-sans font-bold text-2xl text-garden-text">
             Photo Log
           </h3>
           <Link
             href={`/garden`}
-            className="font-mono text-xs text-moss-400 border border-moss-700/50 px-3 py-1.5 rounded hover:border-moss-500 hover:text-parchment-400 transition-colors"
+            className="font-sans text-base text-garden-green border border-garden-border px-3 py-1.5 rounded hover:border-garden-greenBright hover:text-garden-greenBright transition-colors"
           >
             + Add Photo
           </Link>

@@ -1,42 +1,28 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, Lora, JetBrains_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
-const displayFont = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-display",
-  display: "swap",
-});
-
-const bodyFont = Lora({
+const sansFont = Inter({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-body",
-  display: "swap",
-});
-
-const monoFont = JetBrains_Mono({
-  subsets: ["latin"],
-  weight: ["400"],
-  variable: "--font-mono",
+  variable: "--font-sans",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "What Grows in Bristol — AI Garden Journal",
+  title: "My Garden Journal",
   description:
-    "A living AI-powered garden journal tracking seedlings from sowing to harvest. Live weather, growth analytics, and personalised gardening advice.",
+    "Take a photo of your plant and get instant care advice. Track your garden from sowing to harvest.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
-    title: "Garden",
+    statusBarStyle: "default",
+    title: "My Garden",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a1f0a",
+  themeColor: "#FFFFFF",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -52,9 +38,7 @@ export default function RootLayout({
       <head>
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
-      <body
-        className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable} font-body antialiased`}
-      >
+      <body className={`${sansFont.variable} font-sans antialiased`}>
         {children}
       </body>
     </html>

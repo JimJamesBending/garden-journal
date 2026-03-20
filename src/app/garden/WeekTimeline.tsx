@@ -35,10 +35,10 @@ const CATEGORY_ICONS: Record<string, string> = {
 
 const PRIORITY_DOT: Record<string, string> = {
   urgent: "bg-red-500",
-  high: "bg-parchment-400",
-  medium: "bg-moss-400",
-  low: "bg-moss-600",
-  info: "bg-night-400",
+  high: "bg-amber-500",
+  medium: "bg-garden-greenBright",
+  low: "bg-garden-green",
+  info: "bg-gray-400",
 };
 
 export function WeekTimeline({ advice, daily }: WeekTimelineProps) {
@@ -58,27 +58,27 @@ export function WeekTimeline({ advice, daily }: WeekTimelineProps) {
 
   return (
     <div ref={ref} className="mb-6">
-      <h2 className="font-display text-lg text-parchment-200 mb-3">
+      <h2 className="font-sans font-bold text-lg text-garden-text mb-3">
         This Week
       </h2>
 
       <div className="relative pl-6">
         {/* Vertical line */}
-        <div className="absolute left-2 top-0 bottom-0 w-px bg-gradient-to-b from-moss-600/50 via-moss-700/30 to-transparent" />
+        <div className="absolute left-2 top-0 bottom-0 w-px bg-garden-border" />
 
         {/* Today section */}
         {todayItems.length > 0 && (
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-3 -ml-6">
-              <div className="w-4 h-4 rounded-full bg-moss-700 border-2 border-moss-500 flex items-center justify-center z-10">
-                <div className="w-1.5 h-1.5 rounded-full bg-moss-400" />
+              <div className="w-4 h-4 rounded-full bg-garden-greenBright border-2 border-garden-border flex items-center justify-center z-10">
+                <div className="w-1.5 h-1.5 rounded-full bg-garden-greenLight" />
               </div>
-              <span className="font-mono text-[11px] text-parchment-300 uppercase tracking-wider">
+              <span className="font-sans text-base text-garden-text uppercase tracking-wider">
                 Today
               </span>
               {daily[0] && (
-                <span className="font-mono text-[10px] text-moss-500">
-                  {WEATHER_ICONS[daily[0].condition]} {Math.round(daily[0].tempMax)}°/{Math.round(daily[0].tempMin)}°
+                <span className="font-sans text-base text-garden-textMuted">
+                  {WEATHER_ICONS[daily[0].condition]} {Math.round(daily[0].tempMax)}\u00B0/{Math.round(daily[0].tempMin)}\u00B0
                 </span>
               )}
             </div>
@@ -89,12 +89,12 @@ export function WeekTimeline({ advice, daily }: WeekTimelineProps) {
                   initial={{ opacity: 0, x: -10 }}
                   animate={isInView ? { opacity: 1, x: 0 } : {}}
                   transition={{ delay: i * 0.05, duration: 0.3 }}
-                  className="bg-moss-800/30 border border-moss-700/20 rounded-lg px-3 py-2"
+                  className="bg-garden-greenLight border border-garden-border rounded-lg px-3 py-2"
                 >
                   <div className="flex items-start gap-2">
                     <span className={`inline-block w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${PRIORITY_DOT[item.priority]}`} />
                     <div className="min-w-0">
-                      <p className="font-body text-xs text-parchment-300 leading-snug">
+                      <p className="font-sans text-base text-garden-text leading-snug">
                         {CATEGORY_ICONS[item.category]} {item.title}
                       </p>
                     </div>
@@ -109,8 +109,8 @@ export function WeekTimeline({ advice, daily }: WeekTimelineProps) {
         {upcomingItems.length > 0 && (
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-3 -ml-6">
-              <div className="w-4 h-4 rounded-full bg-moss-800 border-2 border-moss-700 z-10" />
-              <span className="font-mono text-[11px] text-moss-400 uppercase tracking-wider">
+              <div className="w-4 h-4 rounded-full bg-white border-2 border-garden-border z-10" />
+              <span className="font-sans text-base text-garden-textMuted uppercase tracking-wider">
                 Coming Up
               </span>
             </div>
@@ -121,11 +121,11 @@ export function WeekTimeline({ advice, daily }: WeekTimelineProps) {
                   initial={{ opacity: 0, x: -10 }}
                   animate={isInView ? { opacity: 1, x: 0 } : {}}
                   transition={{ delay: 0.2 + i * 0.05, duration: 0.3 }}
-                  className="bg-moss-800/20 border border-moss-700/15 rounded-lg px-3 py-2"
+                  className="bg-white border border-garden-border rounded-lg px-3 py-2"
                 >
                   <div className="flex items-start gap-2">
                     <span className={`inline-block w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${PRIORITY_DOT[item.priority]}`} />
-                    <p className="font-body text-xs text-parchment-400/70 leading-snug">
+                    <p className="font-sans text-base text-garden-textMuted leading-snug">
                       {CATEGORY_ICONS[item.category]} {item.title}
                     </p>
                   </div>
@@ -139,8 +139,8 @@ export function WeekTimeline({ advice, daily }: WeekTimelineProps) {
         {infoItems.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-3 -ml-6">
-              <div className="w-4 h-4 rounded-full bg-moss-800 border-2 border-moss-700/50 z-10" />
-              <span className="font-mono text-[11px] text-moss-500 uppercase tracking-wider">
+              <div className="w-4 h-4 rounded-full bg-white border-2 border-garden-border z-10" />
+              <span className="font-sans text-base text-garden-textMuted uppercase tracking-wider">
                 Tips
               </span>
             </div>
@@ -151,9 +151,9 @@ export function WeekTimeline({ advice, daily }: WeekTimelineProps) {
                   initial={{ opacity: 0, x: -10 }}
                   animate={isInView ? { opacity: 1, x: 0 } : {}}
                   transition={{ delay: 0.4 + i * 0.05, duration: 0.3 }}
-                  className="bg-moss-800/10 border border-moss-700/10 rounded-lg px-3 py-2"
+                  className="bg-garden-offwhite border border-garden-border rounded-lg px-3 py-2"
                 >
-                  <p className="font-body text-[11px] text-moss-400 leading-snug">
+                  <p className="font-sans text-base text-garden-textMuted leading-snug">
                     {CATEGORY_ICONS[item.category]} {item.title}
                   </p>
                 </motion.div>

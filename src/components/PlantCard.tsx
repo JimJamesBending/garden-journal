@@ -16,10 +16,10 @@ export function PlantCard({ plant, latestLog }: PlantCardProps) {
   return (
     <Link
       href={`/plant/${plant.slug}`}
-      className="group block bg-night-900/60 border border-moss-800/40 rounded-lg overflow-hidden hover:border-moss-600/60 transition-all duration-300 hover:shadow-lg hover:shadow-moss-950/50"
+      className="group block bg-white border border-garden-border rounded-lg overflow-hidden hover:border-garden-greenBright transition-all duration-300 hover:shadow-lg"
     >
       {/* Thumbnail area */}
-      <div className="aspect-[4/3] bg-night-950/80 relative overflow-hidden">
+      <div className="aspect-[4/3] bg-garden-greenLight relative overflow-hidden">
         {latestLog?.cloudinaryUrl ? (
           <img
             src={latestLog.cloudinaryUrl}
@@ -30,7 +30,7 @@ export function PlantCard({ plant, latestLog }: PlantCardProps) {
           <div className="w-full h-full flex items-center justify-center">
             <div className="text-center">
               <span className="text-4xl opacity-30">{emoji}</span>
-              <p className="font-mono text-xs text-moss-700 mt-2">
+              <p className="font-sans text-base text-garden-textMuted mt-2">
                 Awaiting first photo
               </p>
             </div>
@@ -39,7 +39,7 @@ export function PlantCard({ plant, latestLog }: PlantCardProps) {
 
         {/* Confidence badge */}
         {plant.confidence === "partial" && (
-          <div className="absolute top-2 right-2 bg-earth-800/80 text-earth-300 font-mono text-[10px] px-1.5 py-0.5 rounded">
+          <div className="absolute top-2 right-2 bg-amber-100 text-amber-800 font-sans text-base px-1.5 py-0.5 rounded">
             ID uncertain
           </div>
         )}
@@ -48,21 +48,21 @@ export function PlantCard({ plant, latestLog }: PlantCardProps) {
       {/* Info */}
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-1">
-          <h3 className="font-display text-xl text-parchment-200 group-hover:text-parchment-100 transition-colors leading-tight">
+          <h3 className="font-sans font-bold text-xl text-garden-text group-hover:text-garden-green transition-colors leading-tight">
             {plant.commonName}
           </h3>
           <StatusPill status={status} />
         </div>
 
-        <p className="font-body text-sm text-parchment-500 italic mb-2">
+        <p className="font-sans text-sm text-garden-textMuted italic mb-2">
           {plant.variety}
         </p>
 
         <div className="flex items-center justify-between">
-          <span className="font-mono text-xs text-moss-500">
+          <span className="font-sans text-base text-garden-textMuted">
             Day {days}
           </span>
-          <span className="font-mono text-xs text-moss-600 uppercase tracking-wider">
+          <span className="font-sans text-base text-garden-textMuted uppercase tracking-wider">
             {plant.category}
           </span>
         </div>

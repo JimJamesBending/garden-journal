@@ -14,11 +14,11 @@ interface SortStepProps {
 }
 
 const CATEGORY_BADGES: Record<PhotoCategory, { label: string; icon: string; color: string }> = {
-  plant: { label: "Plant", icon: "\u{1F331}", color: "bg-green-900/60 text-green-300 border-green-700/40" },
-  label: { label: "Label", icon: "\u{1F3F7}\uFE0F", color: "bg-parchment-900/40 text-parchment-300 border-parchment-700/40" },
-  overview: { label: "Overview", icon: "\u{1F3DE}\uFE0F", color: "bg-blue-900/50 text-blue-300 border-blue-700/40" },
-  soil: { label: "Soil", icon: "\u{1F7EB}", color: "bg-earth-900/50 text-earth-300 border-earth-700/40" },
-  unclear: { label: "Unclear", icon: "\u2753", color: "bg-moss-800/50 text-moss-400 border-moss-700/40" },
+  plant: { label: "Plant", icon: "\u{1F331}", color: "bg-garden-greenLight text-garden-green border-garden-border" },
+  label: { label: "Label", icon: "\u{1F3F7}\uFE0F", color: "bg-amber-50 text-garden-amber border-amber-200" },
+  overview: { label: "Overview", icon: "\u{1F3DE}\uFE0F", color: "bg-blue-50 text-garden-blue border-blue-200" },
+  soil: { label: "Soil", icon: "\u{1F7EB}", color: "bg-orange-50 text-orange-800 border-orange-200" },
+  unclear: { label: "Unclear", icon: "\u2753", color: "bg-gray-100 text-garden-textMuted border-gray-300" },
 };
 
 const CATEGORY_ORDER: PhotoCategory[] = ["plant", "label", "overview", "soil", "unclear"];
@@ -38,14 +38,14 @@ export function SortStep({ photos, loading, onOverrideCategory, onConfirm, onBac
           size="lg"
         />
         <div className="mt-8 flex flex-col items-center gap-3">
-          <div className="w-48 h-1.5 bg-moss-800/60 rounded-full overflow-hidden">
+          <div className="w-48 h-1.5 bg-garden-greenLight rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-parchment-400 rounded-full"
+              className="h-full bg-garden-greenBright rounded-full"
               animate={{ width: ["0%", "60%", "80%", "90%"] }}
               transition={{ duration: 8, ease: "easeOut" }}
             />
           </div>
-          <p className="font-mono text-[10px] text-moss-500">Examining each photo...</p>
+          <p className="font-sans text-base text-garden-textMuted">Examining each photo...</p>
         </div>
       </div>
     );
@@ -73,7 +73,7 @@ export function SortStep({ photos, loading, onOverrideCategory, onConfirm, onBac
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.05 }}
               onClick={() => onOverrideCategory(photo.id, nextCategory(effectiveCategory))}
-              className="relative rounded-xl overflow-hidden border border-moss-700/30 hover:border-moss-600/40
+              className="relative rounded-xl overflow-hidden border border-garden-border hover:border-garden-greenBright
                          active:scale-95 transition-all text-left"
             >
               {/* Photo */}
@@ -86,9 +86,9 @@ export function SortStep({ photos, loading, onOverrideCategory, onConfirm, onBac
               </div>
 
               {/* Category badge */}
-              <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent">
-                <span className={`inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider
-                                  px-2 py-0.5 rounded-full border backdrop-blur-sm ${badge.color}`}>
+              <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-white/90 to-transparent">
+                <span className={`inline-flex items-center gap-1 text-base font-sans uppercase tracking-wider
+                                  px-2 py-0.5 rounded-full border ${badge.color}`}>
                   <span>{badge.icon}</span>
                   {badge.label}
                 </span>
@@ -97,7 +97,7 @@ export function SortStep({ photos, loading, onOverrideCategory, onConfirm, onBac
               {/* Confidence indicator (only show if low) */}
               {photo.categoryConfidence > 0 && photo.categoryConfidence < 80 && !photo.userOverrideCategory && (
                 <div className="absolute top-2 right-2">
-                  <span className="font-mono text-[8px] text-parchment-300/70 bg-black/40 backdrop-blur-sm px-1.5 py-0.5 rounded-full">
+                  <span className="font-sans text-sm text-garden-textMuted bg-white/80 px-1.5 py-0.5 rounded-full">
                     {photo.categoryConfidence}%
                   </span>
                 </div>
@@ -106,7 +106,7 @@ export function SortStep({ photos, loading, onOverrideCategory, onConfirm, onBac
               {/* OCR text preview for labels */}
               {effectiveCategory === "label" && photo.ocrText && (
                 <div className="absolute top-2 left-2 right-2">
-                  <span className="font-mono text-[8px] text-parchment-200 bg-black/60 backdrop-blur-sm px-1.5 py-0.5 rounded line-clamp-2">
+                  <span className="font-sans text-sm text-garden-text bg-white/80 px-1.5 py-0.5 rounded line-clamp-2">
                     {photo.ocrText.slice(0, 60)}
                   </span>
                 </div>
@@ -115,7 +115,7 @@ export function SortStep({ photos, loading, onOverrideCategory, onConfirm, onBac
               {/* Override indicator */}
               {photo.userOverrideCategory && (
                 <div className="absolute top-2 right-2">
-                  <span className="font-mono text-[8px] text-parchment-300 bg-moss-700/80 backdrop-blur-sm px-1.5 py-0.5 rounded-full">
+                  <span className="font-sans text-sm text-white bg-garden-greenBright px-1.5 py-0.5 rounded-full">
                     edited
                   </span>
                 </div>
@@ -129,15 +129,15 @@ export function SortStep({ photos, loading, onOverrideCategory, onConfirm, onBac
       <div className="flex items-center justify-between pt-2">
         <button
           onClick={onBack}
-          className="font-mono text-sm text-moss-400 hover:text-parchment-300 transition-colors py-2 px-3"
+          className="font-sans text-sm text-garden-textMuted hover:text-garden-green transition-colors py-2 px-3"
         >
           {"\u2190"} Back
         </button>
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={onConfirm}
-          className="bg-moss-600 hover:bg-moss-500 text-parchment-200 font-mono text-sm px-6 py-2.5 rounded-xl
-                     shadow-lg transition-colors"
+          className="bg-garden-greenBright hover:bg-garden-green text-white font-sans text-sm px-6 py-2.5 rounded-xl
+                     shadow-lg transition-colors min-h-[48px]"
         >
           Looks Right!
         </motion.button>

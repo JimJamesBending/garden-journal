@@ -6,7 +6,7 @@ export default function LogNewPage() {
     <Suspense
       fallback={
         <div className="max-w-md mx-auto text-center py-12">
-          <p className="font-mono text-sm text-moss-500">Loading...</p>
+          <p className="font-sans text-base text-garden-textMuted">Loading...</p>
         </div>
       }
     >

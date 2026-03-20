@@ -81,7 +81,7 @@ export function FrontPage({ plants, logs, weather, advice, spaces }: FrontPagePr
       {/* 5. Plant Collection — larger cards with photo backgrounds */}
       <PlantShowcase plants={plants} logs={logs} />
 
-      {/* 6. AI Gardener advice */}
+      {/* 6. Garden advice */}
       <AIGardenerPreview advice={advice} />
 
       {/* 7. Photo journal timeline */}

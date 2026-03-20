@@ -68,13 +68,13 @@ export function SpacesMap({ spaces, plants, logs }: SpacesMapProps) {
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8 }}
         >
-          <span className="font-mono text-xs text-moss-500 uppercase tracking-[0.3em]">
+          <span className="font-sans text-base text-garden-textMuted uppercase tracking-[0.3em]">
             Growing Spaces
           </span>
-          <h2 className="font-display text-4xl sm:text-5xl md:text-6xl font-light text-parchment-200 mt-3 mb-4">
+          <h2 className="font-sans font-bold text-4xl sm:text-5xl md:text-6xl text-garden-text mt-3 mb-4">
             Where Things Grow
           </h2>
-          <p className="font-body text-parchment-500/70 max-w-md mx-auto">
+          <p className="font-sans text-garden-textMuted max-w-md mx-auto">
             Tap a plant marker to see what&apos;s growing in each{" "}
             <Tooltip term="greenhouse">space</Tooltip>.
           </p>
@@ -92,10 +92,10 @@ export function SpacesMap({ spaces, plants, logs }: SpacesMapProps) {
               <button
                 key={s.id}
                 onClick={() => { setActiveSpace(i); setSelectedPin(null); }}
-                className={`font-mono text-xs px-4 py-2 rounded-full border transition-all ${
+                className={`font-sans text-base px-4 py-2 rounded-full border transition-all min-h-[48px] ${
                   activeSpace === i
-                    ? "border-parchment-400/60 bg-parchment-400/10 text-parchment-300"
-                    : "border-moss-700/40 text-moss-400 hover:border-moss-600/60"
+                    ? "border-garden-greenBright bg-garden-greenLight text-garden-text"
+                    : "border-garden-border text-garden-textMuted hover:border-garden-greenBright"
                 }`}
               >
                 {getSpaceIcon(s.type)} {s.name}
@@ -109,7 +109,7 @@ export function SpacesMap({ spaces, plants, logs }: SpacesMapProps) {
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ delay: 0.3, duration: 0.7 }}
-          className="relative rounded-2xl overflow-hidden border border-moss-700/30 bg-moss-800/40"
+          className="relative rounded-2xl overflow-hidden border border-garden-border bg-garden-greenLight"
         >
           {/* Space background image or styled fallback */}
           <div className="relative w-full" style={{ paddingBottom: `${(space.height / space.width) * 100}%`, minHeight: "300px" }}>
@@ -120,9 +120,9 @@ export function SpacesMap({ spaces, plants, logs }: SpacesMapProps) {
                 className="absolute inset-0 w-full h-full object-cover"
               />
             ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-moss-800 via-moss-850 to-moss-900">
+              <div className="absolute inset-0 bg-garden-greenLight">
                 {/* Stylised greenhouse outline */}
-                <div className="absolute inset-8 border-2 border-dashed border-moss-600/30 rounded-xl flex items-center justify-center">
+                <div className="absolute inset-8 border-2 border-dashed border-garden-border rounded-xl flex items-center justify-center">
                   <span className="text-6xl opacity-10">
                     {getSpaceIcon(space.type)}
                   </span>
@@ -130,13 +130,13 @@ export function SpacesMap({ spaces, plants, logs }: SpacesMapProps) {
               </div>
             )}
 
-            {/* Dark overlay for pin readability */}
-            <div className="absolute inset-0 bg-gradient-to-t from-moss-950/60 via-transparent to-moss-950/30" />
+            {/* Light overlay for pin readability */}
+            <div className="absolute inset-0 bg-white/30" />
 
             {/* Space name badge */}
-            <div className="absolute top-3 left-3 bg-moss-900/70 backdrop-blur-sm rounded-full px-3 py-1 flex items-center gap-1.5">
+            <div className="absolute top-3 left-3 bg-white/80 backdrop-blur-sm rounded-full px-3 py-1 flex items-center gap-1.5">
               <span className="text-sm">{getSpaceIcon(space.type)}</span>
-              <span className="font-mono text-[10px] text-parchment-300 uppercase tracking-wider">
+              <span className="font-sans text-base text-garden-text uppercase tracking-wider">
                 <Tooltip term={space.type === "cold-frame" ? "cold frame" : space.type === "raised-bed" ? "earthing up" : space.type}>
                   {space.name}
                 </Tooltip>
@@ -172,8 +172,8 @@ export function SpacesMap({ spaces, plants, logs }: SpacesMapProps) {
                     {/* Pin circle with photo or emoji */}
                     <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 overflow-hidden shadow-lg transition-all ${
                       isSelected
-                        ? "border-parchment-400 shadow-parchment-400/30"
-                        : "border-white/60 shadow-black/40 hover:border-parchment-300"
+                        ? "border-garden-greenBright shadow-garden-greenBright/30"
+                        : "border-white shadow-black/20 hover:border-garden-greenBright"
                     }`}>
                       {photo ? (
                         <img
@@ -182,7 +182,7 @@ export function SpacesMap({ spaces, plants, logs }: SpacesMapProps) {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full bg-moss-700 flex items-center justify-center text-lg">
+                        <div className="w-full h-full bg-garden-greenLight flex items-center justify-center text-lg">
                           {plant.category === "flower" ? "\u{1F33A}" : plant.category === "herb" ? "\u{1F33F}" : "\u{1F331}"}
                         </div>
                       )}
@@ -191,14 +191,14 @@ export function SpacesMap({ spaces, plants, logs }: SpacesMapProps) {
                     {/* Pulse ring when selected */}
                     {isSelected && (
                       <motion.div
-                        className="absolute inset-[-4px] rounded-full border-2 border-parchment-400/50"
+                        className="absolute inset-[-4px] rounded-full border-2 border-garden-greenBright/50"
                         animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0, 0.5] }}
                         transition={{ repeat: Infinity, duration: 2 }}
                       />
                     )}
 
                     {/* Label below pin */}
-                    <span className="absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap font-mono text-[9px] text-parchment-300 bg-moss-900/70 backdrop-blur-sm px-1.5 py-0.5 rounded">
+                    <span className="absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap font-sans text-sm text-garden-text bg-white/80 backdrop-blur-sm px-1.5 py-0.5 rounded">
                       {plant.commonName}
                     </span>
                   </motion.button>
@@ -210,7 +210,7 @@ export function SpacesMap({ spaces, plants, logs }: SpacesMapProps) {
                         initial={{ opacity: 0, y: 10, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.9 }}
-                        className="absolute z-20 top-full mt-8 left-1/2 -translate-x-1/2 w-56 bg-night-950/95 border border-moss-700/50 rounded-xl overflow-hidden shadow-xl"
+                        className="absolute z-20 top-full mt-8 left-1/2 -translate-x-1/2 w-56 bg-white border border-garden-border rounded-xl overflow-hidden shadow-xl"
                       >
                         {/* Connector line */}
                         <svg
@@ -221,7 +221,7 @@ export function SpacesMap({ spaces, plants, logs }: SpacesMapProps) {
                         >
                           <motion.line
                             x1="1" y1="0" x2="1" y2="24"
-                            stroke="rgba(196, 160, 90, 0.4)"
+                            stroke="rgba(46, 125, 50, 0.4)"
                             strokeWidth="1.5"
                             strokeDasharray="4 3"
                             initial={{ pathLength: 0 }}
@@ -241,25 +241,25 @@ export function SpacesMap({ spaces, plants, logs }: SpacesMapProps) {
 
                         {/* Info */}
                         <div className="p-3">
-                          <h4 className="font-display text-sm text-parchment-200">
+                          <h4 className="font-sans font-bold text-sm text-garden-text">
                             {plant.commonName}
                           </h4>
-                          <p className="font-body text-[10px] text-parchment-400/50 italic">
+                          <p className="font-sans text-base text-garden-textMuted italic">
                             {plant.latinName}
                           </p>
-                          <p className="font-mono text-[10px] text-moss-400 mt-1">
+                          <p className="font-sans text-base text-garden-textMuted mt-1">
                             {plant.variety}
                           </p>
                           {pos.label && (
-                            <p className="font-mono text-[9px] text-moss-500 mt-1">
+                            <p className="font-sans text-sm text-garden-textMuted mt-1">
                               {"\u{1F4CD}"} {pos.label}
                             </p>
                           )}
-                          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-moss-700/30">
-                            <span className="font-mono text-[9px] text-moss-400">
+                          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-garden-border">
+                            <span className="font-sans text-sm text-garden-textMuted">
                               {plant.location === "indoor" ? "\u{1F3E0}" : "\u{1F33F}"} {plant.location}
                             </span>
-                            <span className="font-mono text-[9px] text-moss-500">
+                            <span className="font-sans text-sm text-garden-textMuted">
                               {Math.floor(
                                 (Date.now() - new Date(plant.sowDate).getTime()) / (1000 * 60 * 60 * 24)
                               )} days
@@ -276,8 +276,8 @@ export function SpacesMap({ spaces, plants, logs }: SpacesMapProps) {
 
           {/* Space description */}
           {space.description && (
-            <div className="px-4 py-3 border-t border-moss-700/30">
-              <p className="font-body text-xs text-parchment-400/60">
+            <div className="px-4 py-3 border-t border-garden-border">
+              <p className="font-sans text-base text-garden-textMuted">
                 {space.description}
               </p>
             </div>
@@ -286,7 +286,7 @@ export function SpacesMap({ spaces, plants, logs }: SpacesMapProps) {
 
         {/* Plant count summary */}
         <motion.p
-          className="text-center mt-4 font-mono text-[10px] text-moss-500"
+          className="text-center mt-4 font-sans text-base text-garden-textMuted"
           initial={{ opacity: 0 }}
           animate={isInView ? { opacity: 1 } : {}}
           transition={{ delay: 0.5 }}

@@ -1,17 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
-export default function SignupPage() {
+function SignupForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,7 +20,9 @@ export default function SignupPage() {
     setLoading(true);
 
     const supabase = createClient();
-    const { error: authError } = await supabase.auth.signUp({
+
+    // Create the account
+    const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -27,139 +30,136 @@ export default function SignupPage() {
       },
     });
 
-    if (authError) {
-      setError(authError.message);
+    if (signUpError) {
+      setError(signUpError.message);
       setLoading(false);
       return;
     }
 
-    // If email confirmation is disabled, redirect straight to garden
-    // Otherwise show success message
-    setSuccess(true);
-    setLoading(false);
-
-    // Try to sign in immediately (works if email confirmation is off)
-    const { error: loginError } = await supabase.auth.signInWithPassword({
+    // Immediately sign in after signup
+    const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (!loginError) {
-      router.push("/garden");
-      router.refresh();
+    if (signInError) {
+      setError("Account created but sign-in failed. Please try logging in.");
+      setLoading(false);
+      return;
     }
+
+    // Redirect: if they came from /try, go to /garden (which picks up pendingPlant from sessionStorage)
+    const from = searchParams.get("from");
+    const redirectTo = from === "try" ? "/garden" : "/garden";
+    router.push(redirectTo);
+    router.refresh();
   };
 
-  if (success) {
-    return (
-      <div className="min-h-screen bg-night-950 flex items-center justify-center px-4">
-        <div className="w-full max-w-sm text-center">
-          <h1 className="font-display text-3xl text-parchment-300 mb-4">
-            Account Created
-          </h1>
-          <p className="text-parchment-300/70 mb-6">
-            Check your email for a confirmation link, then sign in.
-          </p>
-          <a
-            href="/login"
-            className="inline-block px-6 py-3 rounded-lg bg-moss-700 hover:bg-moss-600 text-parchment-300 font-semibold transition-colors"
-          >
-            Go to Sign In
-          </a>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-night-950 flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <h1 className="font-display text-4xl text-parchment-300 mb-2">
-            Garden Journal
-          </h1>
-          <p className="text-parchment-300/60 text-sm">
-            Create your garden account
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label
-              htmlFor="name"
-              className="block text-parchment-300/80 text-sm mb-1"
-            >
-              Your name
-            </label>
-            <input
-              id="name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg bg-night-900 border border-moss-800 text-parchment-300 placeholder:text-parchment-300/30 focus:outline-none focus:border-moss-500 text-lg"
-              placeholder="Jim"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-parchment-300/80 text-sm mb-1"
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-              className="w-full px-4 py-3 rounded-lg bg-night-900 border border-moss-800 text-parchment-300 placeholder:text-parchment-300/30 focus:outline-none focus:border-moss-500 text-lg"
-              placeholder="you@email.com"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-parchment-300/80 text-sm mb-1"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              autoComplete="new-password"
-              className="w-full px-4 py-3 rounded-lg bg-night-900 border border-moss-800 text-parchment-300 placeholder:text-parchment-300/30 focus:outline-none focus:border-moss-500 text-lg"
-              placeholder="At least 6 characters"
-            />
-          </div>
-
-          {error && (
-            <p className="text-red-400 text-sm text-center">{error}</p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 rounded-lg bg-moss-700 hover:bg-moss-600 text-parchment-300 font-semibold text-lg transition-colors disabled:opacity-50"
-          >
-            {loading ? "Creating account..." : "Create Account"}
-          </button>
-        </form>
-
-        <p className="text-center text-parchment-300/50 text-sm mt-6">
-          Already have an account?{" "}
-          <a href="/login" className="text-moss-400 hover:text-moss-300">
-            Sign in
-          </a>
+    <div className="w-full max-w-md">
+      <div className="text-center mb-8">
+        <div className="text-5xl mb-4">🌱</div>
+        <h1 className="text-heading text-garden-text mb-2">
+          Create Your Garden
+        </h1>
+        <p className="text-body text-garden-textMuted">
+          It takes 10 seconds
         </p>
       </div>
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label
+            htmlFor="name"
+            className="block text-body-sm text-garden-textMuted font-semibold mb-1.5"
+          >
+            Your name
+          </label>
+          <input
+            id="name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full px-5 py-4 rounded-xl bg-white border-2 border-garden-border text-body text-garden-text placeholder:text-garden-textMuted/40 focus:outline-none focus:border-garden-greenBright transition-colors"
+            placeholder="Jim"
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="email"
+            className="block text-body-sm text-garden-textMuted font-semibold mb-1.5"
+          >
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoComplete="email"
+            className="w-full px-5 py-4 rounded-xl bg-white border-2 border-garden-border text-body text-garden-text placeholder:text-garden-textMuted/40 focus:outline-none focus:border-garden-greenBright transition-colors"
+            placeholder="you@email.com"
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="password"
+            className="block text-body-sm text-garden-textMuted font-semibold mb-1.5"
+          >
+            Password
+          </label>
+          <input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={6}
+            autoComplete="new-password"
+            className="w-full px-5 py-4 rounded-xl bg-white border-2 border-garden-border text-body text-garden-text placeholder:text-garden-textMuted/40 focus:outline-none focus:border-garden-greenBright transition-colors"
+            placeholder="At least 6 characters"
+          />
+        </div>
+
+        {error && (
+          <p className="text-garden-red text-body-sm text-center font-semibold">
+            {error}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-4 rounded-xl bg-garden-greenBright hover:bg-garden-green text-white text-button transition-colors disabled:opacity-50"
+        >
+          {loading ? "Creating your garden..." : "Create My Garden"}
+        </button>
+      </form>
+
+      <p className="text-center text-body text-garden-textMuted mt-8">
+        Already have an account?{" "}
+        <Link href="/login" className="text-garden-greenBright font-semibold underline">
+          Sign in
+        </Link>
+      </p>
+    </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <div className="min-h-screen bg-white flex items-center justify-center px-6">
+      <Suspense fallback={
+        <div className="w-full max-w-md text-center">
+          <div className="text-5xl mb-4">🌱</div>
+          <p className="text-body text-garden-textMuted">Loading...</p>
+        </div>
+      }>
+        <SignupForm />
+      </Suspense>
     </div>
   );
 }

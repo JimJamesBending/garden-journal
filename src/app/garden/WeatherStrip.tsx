@@ -34,14 +34,14 @@ export function WeatherStrip({ current, daily, frostAlert, wateringAdvice }: Wea
         <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "auto" }}
-          className="bg-red-900/30 border border-red-700/40 rounded-xl px-4 py-3 mb-3"
+          className="bg-red-50 border border-red-300 rounded-xl px-4 py-3 mb-3"
         >
           <div className="flex items-center gap-2">
             <span className="relative flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
             </span>
-            <span className="font-mono text-[11px] text-red-300 leading-snug">
+            <span className="font-sans text-base text-red-700 leading-snug">
               {frostAlert}
             </span>
           </div>
@@ -51,24 +51,24 @@ export function WeatherStrip({ current, daily, frostAlert, wateringAdvice }: Wea
       {/* Main weather bar */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full bg-moss-800/40 border border-moss-700/30 rounded-xl px-4 py-3 flex items-center justify-between active:scale-[0.98] transition-transform"
+        className="w-full bg-garden-greenLight border border-garden-border rounded-xl px-4 py-3 flex items-center justify-between active:scale-[0.98] transition-transform"
       >
         <div className="flex items-center gap-3">
           <span className="text-2xl">{icon}</span>
           <div className="text-left">
-            <span className="font-display text-2xl text-parchment-200">
+            <span className="font-sans font-bold text-2xl text-garden-text">
               {Math.round(current.tempCurrent)}°
             </span>
-            <span className="font-mono text-[10px] text-moss-400 ml-2 uppercase">
+            <span className="font-sans text-base text-garden-textMuted ml-2 uppercase">
               Bristol
             </span>
           </div>
         </div>
         <div className="text-right">
-          <div className="font-mono text-[10px] text-moss-500">
+          <div className="font-sans text-base text-garden-textMuted">
             H:{Math.round(current.tempMax)}° L:{Math.round(current.tempMin)}°
           </div>
-          <div className="font-mono text-[10px] text-moss-500">
+          <div className="font-sans text-base text-garden-textMuted">
             {"\u{1F4A7}"} {current.humidity}% {"\u{1F32C}\uFE0F"} {Math.round(current.windSpeed)}km/h
           </div>
         </div>
@@ -83,7 +83,7 @@ export function WeatherStrip({ current, daily, frostAlert, wateringAdvice }: Wea
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <div className="bg-moss-800/20 border border-moss-700/20 rounded-xl mt-2 p-4">
+            <div className="bg-garden-greenLight border border-garden-border rounded-xl mt-2 p-4">
               {/* 3-day strip */}
               <div className="flex gap-2 mb-3">
                 {daily.slice(0, 5).map((day, i) => {
@@ -93,12 +93,12 @@ export function WeatherStrip({ current, daily, frostAlert, wateringAdvice }: Wea
                     : new Date(day.date).toLocaleDateString("en-GB", { weekday: "short" });
                   return (
                     <div key={day.date} className="flex-1 text-center">
-                      <div className="font-mono text-[9px] text-moss-500 mb-1">{dayName}</div>
+                      <div className="font-sans text-sm text-garden-textMuted mb-1">{dayName}</div>
                       <div className="text-sm mb-1">{dayIcon}</div>
-                      <div className="font-mono text-[10px] text-parchment-300">
+                      <div className="font-sans text-base text-garden-text">
                         {Math.round(day.tempMax)}°
                       </div>
-                      <div className="font-mono text-[9px] text-moss-600">
+                      <div className="font-sans text-sm text-garden-textMuted">
                         {Math.round(day.tempMin)}°
                       </div>
                     </div>
@@ -107,22 +107,22 @@ export function WeatherStrip({ current, daily, frostAlert, wateringAdvice }: Wea
               </div>
 
               {/* Watering advice */}
-              <div className="border-t border-moss-700/20 pt-3">
-                <div className="font-mono text-[10px] text-moss-400 uppercase tracking-wider mb-1">
+              <div className="border-t border-garden-border pt-3">
+                <div className="font-sans text-base text-garden-textMuted uppercase tracking-wider mb-1">
                   {"\u{1F4A7}"} Watering
                 </div>
-                <p className="font-body text-xs text-parchment-400/80 leading-relaxed">
+                <p className="font-sans text-base text-garden-textMuted leading-relaxed">
                   {wateringAdvice}
                 </p>
               </div>
 
               {/* Today's gardening context */}
               {daily[0] && (
-                <div className="border-t border-moss-700/20 pt-3 mt-3">
-                  <div className="font-mono text-[10px] text-moss-400 uppercase tracking-wider mb-1">
+                <div className="border-t border-garden-border pt-3 mt-3">
+                  <div className="font-sans text-base text-garden-textMuted uppercase tracking-wider mb-1">
                     {"\u{1F33F}"} Today
                   </div>
-                  <p className="font-body text-xs text-parchment-400/80">
+                  <p className="font-sans text-base text-garden-textMuted">
                     {daily[0].gardeningContext}
                   </p>
                 </div>

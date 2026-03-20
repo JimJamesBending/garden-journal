@@ -47,14 +47,14 @@ export function ReviewStep({ actions, photos, onConfirm, onUndo, onRemoveAction 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: gi * 0.1 }}
-              className="bg-moss-800/30 border border-moss-700/30 rounded-xl p-4 space-y-3"
+              className="bg-garden-greenLight border border-garden-border rounded-xl p-4 space-y-3"
             >
               {/* Plant name */}
               <div className="flex items-center justify-between">
-                <h3 className="font-display text-lg text-parchment-200">
+                <h3 className="font-sans font-bold text-lg text-garden-text">
                   {plantName}
                   {group.actions.some((a) => a.type === "create-plant") && (
-                    <span className="ml-2 font-mono text-[9px] text-moss-400 bg-moss-700/40 px-1.5 py-0.5 rounded-full uppercase">
+                    <span className="ml-2 font-sans text-sm text-garden-greenBright bg-garden-greenLight px-1.5 py-0.5 rounded-full uppercase">
                       new!
                     </span>
                   )}
@@ -69,7 +69,7 @@ export function ReviewStep({ actions, photos, onConfirm, onUndo, onRemoveAction 
                       key={i}
                       src={thumbnail(url)}
                       alt=""
-                      className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border border-moss-700/20"
+                      className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border border-garden-border"
                     />
                   ))}
                 </div>
@@ -82,12 +82,12 @@ export function ReviewStep({ actions, photos, onConfirm, onUndo, onRemoveAction 
                     key={ai}
                     className="flex items-center justify-between py-1"
                   >
-                    <span className="font-mono text-[11px] text-moss-400 flex-1">
+                    <span className="font-sans text-base text-garden-textMuted flex-1">
                       {action.description}
                     </span>
                     <button
                       onClick={() => onRemoveAction(group.indices[ai])}
-                      className="ml-2 text-red-400/60 hover:text-red-400 text-xs transition-colors flex-shrink-0 p-1"
+                      className="ml-2 text-garden-red hover:text-red-700 text-base transition-colors flex-shrink-0 p-1"
                       title="Remove"
                     >
                       {"\u2715"}
@@ -105,15 +105,15 @@ export function ReviewStep({ actions, photos, onConfirm, onUndo, onRemoveAction 
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={onConfirm}
-          className="w-full bg-moss-600 hover:bg-moss-500 text-parchment-200 font-display text-lg py-4 rounded-xl
-                     shadow-lg transition-colors"
+          className="w-full bg-garden-greenBright hover:bg-garden-green text-white font-sans font-bold text-lg py-4 rounded-xl
+                     shadow-lg transition-colors min-h-[48px]"
         >
           Looks Good! {"\u{1F44D}"}
         </motion.button>
 
         <button
           onClick={onUndo}
-          className="mx-auto font-mono text-[11px] text-red-400/60 hover:text-red-400 transition-colors py-2"
+          className="mx-auto font-sans text-base text-garden-red hover:text-red-700 transition-colors py-2"
         >
           Undo Everything
         </button>

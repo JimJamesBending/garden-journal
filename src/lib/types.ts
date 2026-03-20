@@ -316,7 +316,7 @@ export interface WizardOption {
   thumbnailUrl?: string;                   // For plant matching
 }
 
-export type WizardStep = "capture" | "sort" | "questions" | "working" | "review";
+export type WizardStep = "photo" | "results" | "done";
 
 export interface WizardAction {
   type: "create-plant" | "create-log" | "create-care" | "create-growth" | "assign-space" | "update-plant";
@@ -336,6 +336,13 @@ export interface WizardState {
   processingMessage: string;
   error: string | null;
   complete: boolean;
+  // New 3-step wizard fields
+  identifying: boolean;                    // AI identification in progress
+  identifiedName: string | null;           // AI-suggested plant name
+  identifiedConfidence: number;            // 0-100 confidence
+  identifiedCareTips: string | null;       // AI notes / care tips
+  confirmedName: string | null;            // User-confirmed or typed plant name
+  savedPlantName: string | null;           // Final saved name (for done step)
 }
 
 // API request/response types for wizard endpoints

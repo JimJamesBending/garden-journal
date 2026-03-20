@@ -42,10 +42,10 @@ export function PhotoShowcase({ logs, plants }: PhotoShowcaseProps) {
         animate={isInView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.7 }}
       >
-        <span className="font-mono text-xs text-moss-500 uppercase tracking-[0.3em]">
+        <span className="font-sans text-base text-garden-textMuted uppercase tracking-[0.3em]">
           {"\u{1F9A6}"} From the Garden
         </span>
-        <h2 className="font-display text-4xl md:text-5xl font-light text-parchment-200 mt-2">
+        <h2 className="font-sans font-bold text-4xl md:text-5xl text-garden-text mt-2">
           Latest Snaps
         </h2>
       </motion.div>
@@ -69,7 +69,7 @@ export function PhotoShowcase({ logs, plants }: PhotoShowcaseProps) {
                 initial={{ opacity: 0, x: 40 }}
                 animate={isInView ? { opacity: 1, x: 0 } : {}}
                 transition={{ delay: 0.1 + i * 0.06, duration: 0.5 }}
-                className={`flex-shrink-0 snap-center relative rounded-2xl overflow-hidden border border-moss-700/30 cursor-pointer transition-all duration-500 ${
+                className={`flex-shrink-0 snap-center relative rounded-2xl overflow-hidden border border-garden-border cursor-pointer transition-all duration-500 ${
                   isExpanded ? "w-72 sm:w-80" : "w-48 sm:w-56"
                 }`}
                 onClick={() => {
@@ -89,31 +89,31 @@ export function PhotoShowcase({ logs, plants }: PhotoShowcaseProps) {
                     loading="lazy"
                   />
                   {/* Gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-transparent to-transparent" />
 
                   {/* Plant name label */}
                   <div className="absolute bottom-0 left-0 right-0 p-3">
-                    <p className="font-display text-sm text-parchment-200 truncate">
+                    <p className="font-sans font-bold text-sm text-garden-text truncate">
                       {plantName}
                     </p>
                     {log.caption && isExpanded && (
                       <motion.p
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
-                        className="font-body text-[11px] text-parchment-400/70 mt-1 line-clamp-2"
+                        className="font-sans text-base text-garden-textMuted mt-1 line-clamp-2"
                       >
                         {log.caption}
                       </motion.p>
                     )}
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="font-mono text-[9px] text-moss-400">
+                      <span className="font-sans text-sm text-garden-textMuted">
                         {new Date(log.date).toLocaleDateString("en-GB", {
                           day: "numeric",
                           month: "short",
                         })}
                       </span>
                       {category && (
-                        <span className="font-mono text-[9px] text-moss-500 uppercase">
+                        <span className="font-sans text-sm text-garden-textMuted uppercase">
                           {category}
                         </span>
                       )}
@@ -123,10 +123,10 @@ export function PhotoShowcase({ logs, plants }: PhotoShowcaseProps) {
                   {/* Status pip */}
                   <div className="absolute top-2.5 right-2.5">
                     <span className={`inline-block w-2 h-2 rounded-full ${
-                      log.status === "flowering" ? "bg-parchment-400 animate-pulse" :
-                      log.status === "germinated" ? "bg-moss-400" :
-                      log.status === "transplanted" ? "bg-moss-300" :
-                      "bg-moss-600"
+                      log.status === "flowering" ? "bg-pink-500 animate-pulse" :
+                      log.status === "germinated" ? "bg-green-500" :
+                      log.status === "transplanted" ? "bg-green-400" :
+                      "bg-gray-400"
                     }`} />
                   </div>
                 </div>
@@ -140,13 +140,13 @@ export function PhotoShowcase({ logs, plants }: PhotoShowcaseProps) {
             initial={{ opacity: 0, x: 40 }}
             animate={isInView ? { opacity: 1, x: 0 } : {}}
             transition={{ delay: 0.1 + photos.length * 0.06, duration: 0.5 }}
-            className="flex-shrink-0 snap-center w-48 sm:w-56 h-64 sm:h-72 rounded-2xl border border-dashed border-moss-600/40 flex flex-col items-center justify-center gap-3 hover:border-moss-500/60 transition-colors"
+            className="flex-shrink-0 snap-center w-48 sm:w-56 h-64 sm:h-72 rounded-2xl border border-dashed border-garden-border flex flex-col items-center justify-center gap-3 hover:border-garden-greenBright transition-colors"
           >
             <span className="text-3xl opacity-40">{"\u{1F4F7}"}</span>
-            <span className="font-mono text-xs text-moss-400 uppercase tracking-wider">
+            <span className="font-sans text-base text-garden-textMuted uppercase tracking-wider">
               View All
             </span>
-            <span className="font-mono text-[10px] text-moss-500">
+            <span className="font-sans text-base text-garden-textMuted">
               {photos.length} photos
             </span>
           </motion.a>
@@ -171,7 +171,7 @@ export function PhotoShowcase({ logs, plants }: PhotoShowcaseProps) {
             transition={{ duration: 0.3 }}
           />
           <button
-            className="absolute top-6 right-6 font-mono text-sm text-white/60 hover:text-white transition-colors"
+            className="absolute top-6 right-6 font-sans text-base text-white/60 hover:text-white transition-colors"
             onClick={() => setLightboxUrl(null)}
           >
             {"\u2715"} Close

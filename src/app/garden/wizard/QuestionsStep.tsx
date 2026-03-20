@@ -65,7 +65,7 @@ export function QuestionsStep({
       {/* Back button */}
       <button
         onClick={onBack}
-        className="font-mono text-sm text-moss-400 hover:text-parchment-300 transition-colors py-2 px-3"
+        className="font-sans text-sm text-garden-textMuted hover:text-garden-green transition-colors py-2 px-3"
       >
         {"\u2190"} Back
       </button>

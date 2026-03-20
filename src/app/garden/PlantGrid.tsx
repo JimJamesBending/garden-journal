@@ -16,10 +16,10 @@ export function PlantGrid({ plants, logs, growth, care, onSelectPlant }: PlantGr
   return (
     <div className="mb-6">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-display text-lg text-parchment-200">
+        <h2 className="font-sans font-bold text-lg text-garden-text">
           Your Garden
         </h2>
-        <span className="font-mono text-[10px] text-moss-500">
+        <span className="font-sans text-base text-garden-textMuted">
           {plants.length} plants
         </span>
       </div>

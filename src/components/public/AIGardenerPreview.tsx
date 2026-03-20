@@ -10,13 +10,13 @@ interface AIGardenerPreviewProps {
 
 function getPriorityColor(priority: string): string {
   const colors: Record<string, string> = {
-    urgent: "border-red-600/50 bg-red-900/20",
-    high: "border-parchment-500/40 bg-parchment-900/20",
-    medium: "border-moss-500/40 bg-moss-800/30",
-    low: "border-moss-600/30 bg-moss-800/20",
-    info: "border-moss-700/30 bg-moss-900/20",
+    urgent: "border-red-300 bg-red-50",
+    high: "border-amber-300 bg-amber-50",
+    medium: "border-garden-border bg-garden-greenLight",
+    low: "border-garden-border bg-white",
+    info: "border-garden-border bg-white",
   };
-  return colors[priority] || "border-moss-700/30 bg-moss-800/20";
+  return colors[priority] || "border-garden-border bg-white";
 }
 
 function getCategoryIcon(category: string): string {
@@ -61,7 +61,7 @@ export function AIGardenerPreview({ advice }: AIGardenerPreviewProps) {
   if (topAdvice.length === 0) return null;
 
   return (
-    <section ref={ref} className="py-24 px-6 bg-moss-950/50">
+    <section ref={ref} className="py-24 px-6 bg-garden-greenLight">
       <div className="max-w-5xl mx-auto">
         {/* Section header */}
         <motion.div
@@ -70,13 +70,13 @@ export function AIGardenerPreview({ advice }: AIGardenerPreviewProps) {
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8 }}
         >
-          <span className="font-mono text-xs text-moss-500 uppercase tracking-[0.3em]">
-            Your AI Companion
+          <span className="font-sans text-base text-garden-textMuted uppercase tracking-[0.3em]">
+            Garden Tips
           </span>
-          <h2 className="font-display text-5xl md:text-6xl font-light text-parchment-200 mt-3 mb-4">
+          <h2 className="font-sans font-bold text-5xl md:text-6xl text-garden-text mt-3 mb-4">
             The Gardener Says&hellip;
           </h2>
-          <p className="font-body text-parchment-500/70 max-w-lg mx-auto">
+          <p className="font-sans text-garden-textMuted max-w-lg mx-auto">
             Personalised advice based on your plants, the weather, and the
             season. Like having a knowledgeable gardener friend who never forgets.
           </p>
@@ -96,7 +96,7 @@ export function AIGardenerPreview({ advice }: AIGardenerPreviewProps) {
               }}
               className={`rounded-2xl border p-6 ${getPriorityColor(
                 item.priority
-              )} hover:border-parchment-400/30 transition-colors`}
+              )} hover:border-garden-greenBright transition-colors`}
             >
               {/* Header */}
               <div className="flex items-start gap-3 mb-3">
@@ -105,21 +105,21 @@ export function AIGardenerPreview({ advice }: AIGardenerPreviewProps) {
                 </span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-mono text-[10px] text-moss-400 uppercase tracking-wider">
+                    <span className="font-sans text-base text-garden-textMuted uppercase tracking-wider">
                       {getCategoryLabel(item.category)}
                     </span>
                     {item.actionRequired && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-parchment-400 animate-pulse" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                     )}
                   </div>
-                  <h3 className="font-display text-lg text-parchment-200">
+                  <h3 className="font-sans font-bold text-lg text-garden-text">
                     {item.title}
                   </h3>
                 </div>
               </div>
 
               {/* Body */}
-              <p className="font-body text-sm text-parchment-500/70 leading-relaxed whitespace-pre-line">
+              <p className="font-sans text-sm text-garden-textMuted leading-relaxed whitespace-pre-line">
                 {item.body}
               </p>
             </motion.div>
@@ -135,9 +135,9 @@ export function AIGardenerPreview({ advice }: AIGardenerPreviewProps) {
         >
           <a
             href="/garden"
-            className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-parchment-400 hover:text-parchment-200 transition-colors border border-parchment-600/30 hover:border-parchment-400/50 px-6 py-3 rounded-full"
+            className="inline-flex items-center gap-2 font-sans text-base uppercase tracking-wider text-garden-green hover:text-garden-greenBright transition-colors border border-garden-greenBright hover:border-garden-green px-6 py-3 rounded-full min-h-[48px]"
           >
-            Open Garden Portal
+            Open My Garden
             <span className="text-sm">{"\u{2192}"}</span>
           </a>
         </motion.div>
