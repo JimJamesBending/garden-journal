@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI } from "@google/genai";
 import { identifyPlant } from "@/lib/plant-id";
 import type { PhotoCategory, PlantIdResult } from "@/lib/types";
 
 /**
  * POST /api/wizard/sort
  *
- * Sends batch of photo URLs to Claude Vision for categorisation + OCR.
+ * Sends batch of photo URLs to Gemini Flash for categorisation + OCR.
  * Then calls PlantNet for plant photos (species identification).
+ *
+ * Uses Gemini 2.5 Flash — free tier: 250 req/day, $0 cost.
  *
  * Body: { photoUrls: string[], password: string }
  *
@@ -30,40 +32,38 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!process.env.ANTHROPIC_API_KEY) {
+    if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
-        { error: "ANTHROPIC_API_KEY is not configured" },
+        { error: "GEMINI_API_KEY is not configured" },
         { status: 503 }
       );
     }
 
-    // --- Call Claude Vision API ---
-    const anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-    });
-
-    // Build image content blocks
-    const imageBlocks: Anthropic.Messages.ImageBlockParam[] = photoUrls.map(
-      (url: string) => ({
-        type: "image" as const,
-        source: {
-          type: "url" as const,
-          url,
-        },
+    // --- Fetch images and convert to base64 ---
+    const imageContents = await Promise.all(
+      photoUrls.map(async (url: string) => {
+        const res = await fetch(url);
+        const buffer = await res.arrayBuffer();
+        const base64 = Buffer.from(buffer).toString("base64");
+        const mimeType = res.headers.get("content-type") || "image/jpeg";
+        return {
+          inlineData: {
+            mimeType,
+            data: base64,
+          },
+        };
       })
     );
 
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 3000,
-      messages: [
+    // --- Call Gemini Flash Vision API ---
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+    const result = await ai.models.generateContent({
+      model: "gemini-2.5-flash-preview-05-20",
+      contents: [
+        ...imageContents,
         {
-          role: "user",
-          content: [
-            ...imageBlocks,
-            {
-              type: "text",
-              text: `You are a garden photo assistant for a UK gardener. I'm showing you ${photoUrls.length} garden photos. For EACH image (in order), classify it into exactly one category:
+          text: `You are a garden photo assistant for a UK gardener. I'm showing you ${photoUrls.length} garden photos. For EACH image (in order), classify it into exactly one category:
 
 - "plant": Close-up photo of a living plant, leaves, flowers, fruit, or seedlings
 - "label": Seed packet, plant label, price tag, care instructions, or any text/packaging
@@ -84,20 +84,18 @@ Important:
 - ocrText should be null for non-label photos
 - Keep notes concise (under 80 characters)
 - Return one result per image, even if unclear`,
-            },
-          ],
         },
       ],
     });
 
-    // Parse Claude's response
-    const textBlock = response.content.find((b) => b.type === "text");
-    if (!textBlock || textBlock.type !== "text") {
-      throw new Error("No text response from Claude");
+    // Parse Gemini's response
+    const responseText = result.text?.trim();
+    if (!responseText) {
+      throw new Error("No text response from Gemini");
     }
 
     // Extract JSON from response (handle markdown code blocks)
-    let jsonStr = textBlock.text.trim();
+    let jsonStr = responseText;
     if (jsonStr.startsWith("```")) {
       jsonStr = jsonStr.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
     }
@@ -135,7 +133,7 @@ Important:
               plantIdSuggestion = idResult.results[0];
             }
           } catch {
-            // PlantNet failure is non-fatal — we just won't have a suggestion
+            // PlantNet failure is non-fatal
           }
         }
 
