@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Plant, LogEntry, GrowthEntry, CareEvent } from "@/lib/types";
-import { heroImage } from "@/lib/cloudinary";
+import { heroImage, cardBackground } from "@/lib/cloudinary";
 import { GrowthSparkline } from "./GrowthSparkline";
 import { CareIndicators } from "./CareIndicators";
 
@@ -66,30 +66,54 @@ export function PlantCard({
       transition={{ delay: index * 0.05, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       whileTap={{ scale: 0.97 }}
       onClick={() => onSelect(plant.id)}
-      className="w-full text-left bg-moss-800/40 border border-moss-700/30 rounded-xl overflow-hidden hover:border-moss-600/40 transition-colors"
+      className="w-full text-left rounded-xl overflow-hidden border border-moss-700/30 hover:border-moss-600/40 transition-colors"
     >
-      {/* Hero photo */}
+      {/* Hero photo with blurred background */}
       <div className="relative aspect-[4/3] overflow-hidden">
         {latestPhoto ? (
-          <img
-            src={heroImage(latestPhoto.cloudinaryUrl)}
-            alt={plant.commonName}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
+          <>
+            {/* Blurred background fill — ensures full coverage */}
+            <img
+              src={cardBackground(latestPhoto.cloudinaryUrl)}
+              alt=""
+              aria-hidden
+              className="absolute inset-0 w-full h-full object-cover scale-110"
+            />
+            {/* Sharp foreground photo */}
+            <img
+              src={heroImage(latestPhoto.cloudinaryUrl)}
+              alt={plant.commonName}
+              className="relative w-full h-full object-cover"
+              loading="lazy"
+            />
+          </>
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-moss-800 to-moss-900 flex items-center justify-center">
-            <span className="text-3xl opacity-40">
+          /* Illustrated "needs a photo" fallback */
+          <div className="w-full h-full bg-gradient-to-br from-moss-800 via-moss-850 to-moss-900 flex flex-col items-center justify-center gap-1.5">
+            <span className="text-4xl opacity-20">
               {CATEGORY_ICONS[plant.category] || "\u{1F331}"}
             </span>
+            <span className="font-mono text-[9px] text-moss-500 uppercase tracking-wider">
+              Needs a photo!
+            </span>
+            <span className="text-sm opacity-25">{"\u{1F4F7}"}</span>
           </div>
         )}
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-moss-900/80 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-moss-950/80 via-transparent to-transparent" />
 
         {/* Status badge */}
         <div className="absolute top-2 left-2">
           <span className={`inline-block font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full backdrop-blur-sm ${statusStyle}`}>
+            {latestStatus === "flowering" && (
+              <motion.span
+                className="inline-block mr-0.5"
+                animate={{ scale: [1, 1.3, 1] }}
+                transition={{ repeat: Infinity, duration: 2 }}
+              >
+                {"\u2022"}
+              </motion.span>
+            )}
             {latestStatus}
           </span>
         </div>
@@ -102,15 +126,19 @@ export function PlantCard({
             </span>
           </div>
         )}
+
+        {/* Plant name at bottom of photo */}
+        <div className="absolute bottom-0 left-0 right-0 p-2.5">
+          <h3 className="font-display text-base text-parchment-200 truncate">
+            {plant.commonName}
+          </h3>
+        </div>
       </div>
 
       {/* Content */}
-      <div className="p-3">
+      <div className="bg-moss-900/50 backdrop-blur-sm p-3">
         <div className="flex items-start justify-between mb-1">
           <div className="min-w-0">
-            <h3 className="font-display text-base text-parchment-200 truncate">
-              {plant.commonName}
-            </h3>
             {plant.variety && (
               <p className="font-mono text-[9px] text-moss-400 truncate">
                 {plant.variety}

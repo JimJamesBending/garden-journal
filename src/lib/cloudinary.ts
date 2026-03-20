@@ -146,3 +146,49 @@ export function ogImage(url: string): string {
     autoEnhance: true,
   });
 }
+
+/** Full-bleed hero background — wide, heavily blurred */
+export function heroBackground(url: string): string {
+  return transformUrl(url, {
+    width: 1920,
+    height: 1080,
+    crop: "fill",
+    gravity: "auto",
+    blur: 400,
+    quality: 60,
+  });
+}
+
+/** Hero foreground — sharp, centred subject */
+export function heroForeground(url: string): string {
+  return transformUrl(url, {
+    width: 900,
+    height: 700,
+    crop: "fill",
+    gravity: "auto",
+    autoEnhance: true,
+  });
+}
+
+/** Showcase strip — portrait-ish, medium size */
+export function showcaseImage(url: string): string {
+  return transformUrl(url, {
+    width: 400,
+    height: 500,
+    crop: "fill",
+    gravity: "auto",
+    autoEnhance: true,
+  });
+}
+
+/** Plant card background — blurred for text overlay */
+export function cardBackground(url: string): string {
+  return transformUrl(url, {
+    width: 600,
+    height: 400,
+    crop: "fill",
+    gravity: "auto",
+    blur: 600,
+    quality: 40,
+  });
+}

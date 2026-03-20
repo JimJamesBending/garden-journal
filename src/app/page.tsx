@@ -1,4 +1,4 @@
-import { getPlants, getLogs, getCareEvents, getGrowth, getAdvice, saveAdvice } from "@/lib/blob";
+import { getPlants, getLogs, getCareEvents, getGrowth, getAdvice, saveAdvice, getSpaces } from "@/lib/blob";
 import { fetchWeather, getGardeningContext, getWateringAdvice, getFrostAlert } from "@/lib/weather";
 import { generateAdvice } from "@/lib/advice-engine";
 import { FrontPage } from "./FrontPage";
@@ -6,11 +6,12 @@ import { FrontPage } from "./FrontPage";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [plants, logs, careEvents, growth] = await Promise.all([
+  const [plants, logs, careEvents, growth, spaces] = await Promise.all([
     getPlants(),
     getLogs(),
     getCareEvents(),
     getGrowth(),
+    getSpaces(),
   ]);
 
   // Fetch weather (with fallback)
@@ -54,6 +55,7 @@ export default async function HomePage() {
       logs={logs}
       weather={weather}
       advice={advice}
+      spaces={spaces}
     />
   );
 }

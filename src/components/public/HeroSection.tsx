@@ -2,12 +2,15 @@
 
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
+import { LogEntry } from "@/lib/types";
+import { heroBackground, heroForeground } from "@/lib/cloudinary";
 
 interface HeroProps {
   totalPlants: number;
   totalPhotos: number;
   currentTemp?: number;
   weatherCondition?: string;
+  logs: LogEntry[];
 }
 
 function getSeasonLabel(): string {
@@ -42,11 +45,19 @@ function getWeatherIcon(condition?: string): string {
   return icons[condition] || "";
 }
 
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning, gardener";
+  if (hour < 17) return "Good afternoon, gardener";
+  return "Good evening, gardener";
+}
+
 export function HeroSection({
   totalPlants,
   totalPhotos,
   currentTemp,
   weatherCondition,
+  logs,
 }: HeroProps) {
   const ref = useRef(null);
   const { scrollYProgress } = useScroll({
@@ -57,35 +68,90 @@ export function HeroSection({
   const y = useTransform(scrollYProgress, [0, 1], [0, 200]);
   const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
   const scale = useTransform(scrollYProgress, [0, 1], [1, 0.9]);
+  const bgScale = useTransform(scrollYProgress, [0, 1], [1, 1.15]);
+  const fgY = useTransform(scrollYProgress, [0, 1], [0, 100]);
 
   const season = getSeasonLabel();
 
+  // Pick the best hero photo - prefer greenhouse overviews, fallback to any labeled photo
+  const labeledLogs = logs.filter((l) => l.labeled && l.cloudinaryUrl);
+  const overviewPhoto = labeledLogs.find(
+    (l) => !l.plantId || l.plantId === ""
+  );
+  const heroPhoto = overviewPhoto || labeledLogs[0] || null;
+
   return (
-    <section ref={ref} className="relative h-screen flex items-center justify-center overflow-hidden">
-      {/* Background gradient layers */}
-      <motion.div
-        className="absolute inset-0"
-        style={{ y }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-b from-moss-950 via-moss-900 to-moss-900" />
-        <div className="absolute inset-0 bg-gradient-to-t from-moss-900/90 via-transparent to-transparent" />
-        {/* Decorative botanical circle */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full border border-moss-700/20" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full border border-moss-700/15" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-[200px] rounded-full border border-parchment-400/10" />
+    <section
+      ref={ref}
+      className="relative h-screen flex items-center justify-center overflow-hidden"
+    >
+      {/* Background - blurred photo or gradient */}
+      <motion.div className="absolute inset-0" style={{ y, scale: bgScale }}>
+        {heroPhoto ? (
+          <>
+            <img
+              src={heroBackground(heroPhoto.cloudinaryUrl)}
+              alt=""
+              aria-hidden
+              className="absolute inset-0 w-full h-full object-cover scale-110"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-moss-950/70 via-moss-950/40 to-moss-950/80" />
+          </>
+        ) : (
+          <>
+            <div className="absolute inset-0 bg-gradient-to-b from-moss-950 via-moss-900 to-moss-900" />
+            <div className="absolute inset-0 bg-gradient-to-t from-moss-900/90 via-transparent to-transparent" />
+          </>
+        )}
       </motion.div>
+
+      {/* Foreground hero photo - sharp, centred, subtle */}
+      {heroPhoto && (
+        <motion.div
+          className="absolute inset-0 flex items-center justify-center pointer-events-none"
+          style={{ y: fgY }}
+        >
+          <motion.img
+            src={heroForeground(heroPhoto.cloudinaryUrl)}
+            alt="Garden overview"
+            className="w-[80vw] sm:w-[60vw] md:w-[45vw] max-w-lg h-auto rounded-3xl shadow-2xl shadow-black/60 object-cover opacity-20 sm:opacity-25"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 0.25, scale: 1 }}
+            transition={{ delay: 0.5, duration: 1.2 }}
+          />
+        </motion.div>
+      )}
 
       {/* Main content */}
       <motion.div
         className="relative z-10 text-center px-6"
         style={{ opacity, scale }}
       >
+        {/* Otter mascot + greeting */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.8 }}
+          className="mb-4"
+        >
+          <motion.span
+            className="text-4xl sm:text-5xl inline-block"
+            animate={{ rotate: [0, -5, 5, -3, 0] }}
+            transition={{ repeat: Infinity, duration: 4, ease: "easeInOut", delay: 2 }}
+          >
+            {"\u{1F9A6}"}
+          </motion.span>
+          <p className="font-body text-base sm:text-lg text-parchment-400/80 mt-2">
+            {getGreeting()}!
+          </p>
+        </motion.div>
+
         {/* Season badge */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.8 }}
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-moss-600/40 bg-moss-800/50 backdrop-blur-sm mb-8"
+          transition={{ delay: 0.3, duration: 0.8 }}
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-moss-600/40 bg-moss-800/50 backdrop-blur-sm mb-6"
         >
           <span className="text-sm">{getSeasonEmoji()}</span>
           <span className="font-mono text-xs text-moss-300 uppercase tracking-widest">
@@ -95,15 +161,15 @@ export function HeroSection({
             <>
               <span className="text-moss-600">|</span>
               <span className="font-mono text-xs text-parchment-400">
-                {getWeatherIcon(weatherCondition)} {Math.round(currentTemp)}°C
+                {getWeatherIcon(weatherCondition)} {Math.round(currentTemp)}{"\u00B0"}C
               </span>
             </>
           )}
         </motion.div>
 
-        {/* Title — letter by letter reveal */}
+        {/* Title */}
         <motion.h1
-          className="font-display text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-light text-parchment-200 mb-4 leading-[0.9]"
+          className="font-display text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-light text-parchment-200 mb-4 leading-[0.9]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4, duration: 1.2 }}
@@ -141,20 +207,20 @@ export function HeroSection({
           ))}
         </motion.h1>
 
-        {/* Subtitle */}
+        {/* Subtitle - friendly otter companion */}
         <motion.p
-          className="font-body text-lg md:text-xl text-parchment-500/80 mb-10 max-w-lg mx-auto"
+          className="font-body text-base md:text-lg text-parchment-400/80 mb-10 max-w-lg mx-auto"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.5, duration: 0.8 }}
         >
-          A living journal of growth, weather, and the quiet joy of watching
-          things grow.
+          Your friendly garden otter &mdash; tracking growth, reading the weather,
+          and always happy to lend a paw.
         </motion.p>
 
         {/* Stats */}
         <motion.div
-          className="flex justify-center gap-10 font-mono text-xs uppercase tracking-[0.2em]"
+          className="flex justify-center gap-8 sm:gap-10 font-mono text-xs uppercase tracking-[0.2em]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.8, duration: 0.8 }}
@@ -202,13 +268,13 @@ export function HeroSection({
 
       {/* Scroll indicator */}
       <motion.div
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 2.5, duration: 0.8 }}
       >
         <span className="font-mono text-[10px] text-moss-500 uppercase tracking-[0.3em]">
-          Scroll
+          Explore the garden
         </span>
         <motion.div
           className="w-5 h-8 rounded-full border border-moss-600/40 flex justify-center pt-1.5"

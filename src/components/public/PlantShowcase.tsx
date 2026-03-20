@@ -3,22 +3,34 @@
 import { motion, useInView } from "framer-motion";
 import { useRef, useState } from "react";
 import { Plant, LogEntry } from "@/lib/types";
-import { heroImage, thumbnail } from "@/lib/cloudinary";
+import { heroImage, cardBackground } from "@/lib/cloudinary";
+import { Tooltip } from "@/components/Tooltip";
 
 interface PlantShowcaseProps {
   plants: Plant[];
   logs: LogEntry[];
 }
 
+function getStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    sowed: "Sown",
+    germinated: "Germinated",
+    transplanted: "Transplanted",
+    flowering: "Flowering",
+    harvested: "Harvested",
+  };
+  return labels[status] || status;
+}
+
 function getStatusColor(status: string): string {
   const colors: Record<string, string> = {
-    sowed: "bg-earth-600/60 text-earth-200",
-    germinated: "bg-moss-600/60 text-moss-200",
-    transplanted: "bg-moss-500/60 text-moss-100",
-    flowering: "bg-parchment-600/60 text-parchment-200",
-    harvested: "bg-parchment-500/60 text-parchment-100",
+    sowed: "bg-earth-600/70 text-earth-100",
+    germinated: "bg-moss-600/70 text-moss-100",
+    transplanted: "bg-moss-500/70 text-moss-100",
+    flowering: "bg-parchment-600/70 text-parchment-100",
+    harvested: "bg-parchment-500/70 text-parchment-100",
   };
-  return colors[status] || "bg-moss-700/60 text-moss-300";
+  return colors[status] || "bg-moss-700/70 text-moss-200";
 }
 
 function getCategoryIcon(category: string): string {
@@ -49,7 +61,6 @@ export function PlantShowcase({ plants, logs }: PlantShowcaseProps) {
       ? plants
       : plants.filter((p) => p.category === activeFilter);
 
-  // Get latest labeled photo for each plant
   const getPlantPhoto = (plantId: string): string | null => {
     const plantLog = logs.find(
       (l) => l.plantId === plantId && l.cloudinaryUrl && l.labeled
@@ -57,18 +68,23 @@ export function PlantShowcase({ plants, logs }: PlantShowcaseProps) {
     return plantLog?.cloudinaryUrl || null;
   };
 
-  // Get latest status for each plant
+  const getPhotoCount = (plantId: string): number => {
+    return logs.filter(
+      (l) => l.plantId === plantId && l.cloudinaryUrl && l.labeled
+    ).length;
+  };
+
   const getPlantStatus = (plantId: string): string => {
     const plantLog = logs.find((l) => l.plantId === plantId && l.labeled);
     return plantLog?.status || "sowed";
   };
 
   return (
-    <section ref={ref} className="py-24 px-6">
+    <section ref={ref} className="py-16 sm:py-24 px-6">
       <div className="max-w-7xl mx-auto">
         {/* Section header */}
         <motion.div
-          className="text-center mb-16"
+          className="text-center mb-12"
           initial={{ opacity: 0, y: 40 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8 }}
@@ -76,18 +92,18 @@ export function PlantShowcase({ plants, logs }: PlantShowcaseProps) {
           <span className="font-mono text-xs text-moss-500 uppercase tracking-[0.3em]">
             The Collection
           </span>
-          <h2 className="font-display text-5xl md:text-6xl font-light text-parchment-200 mt-3 mb-4">
+          <h2 className="font-display text-4xl sm:text-5xl md:text-6xl font-light text-parchment-200 mt-3 mb-4">
             What&apos;s Growing
           </h2>
           <p className="font-body text-parchment-500/70 max-w-md mx-auto">
-            Every plant, tracked from seed to harvest. Tap any card to see its
-            full story.
+            Every plant, tracked from{" "}
+            <Tooltip term="germination">seed</Tooltip> to harvest.
           </p>
         </motion.div>
 
         {/* Category filters */}
         <motion.div
-          className="flex flex-wrap justify-center gap-3 mb-12"
+          className="flex flex-wrap justify-center gap-3 mb-10"
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ delay: 0.2, duration: 0.6 }}
@@ -107,12 +123,13 @@ export function PlantShowcase({ plants, logs }: PlantShowcaseProps) {
           ))}
         </motion.div>
 
-        {/* Plant cards grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {/* Plant cards grid - photo-heavy */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map((plant, i) => {
             const photo = getPlantPhoto(plant.id);
             const status = getPlantStatus(plant.id);
             const days = daysSince(plant.sowDate);
+            const photoCount = getPhotoCount(plant.id);
 
             return (
               <motion.div
@@ -120,35 +137,47 @@ export function PlantShowcase({ plants, logs }: PlantShowcaseProps) {
                 initial={{ opacity: 0, y: 40, scale: 0.95 }}
                 animate={isInView ? { opacity: 1, y: 0, scale: 1 } : {}}
                 transition={{
-                  delay: 0.1 * i,
+                  delay: 0.1 * Math.min(i, 8),
                   duration: 0.6,
                   ease: [0.22, 1, 0.36, 1],
                 }}
-                whileHover={{
-                  y: -8,
-                  transition: { duration: 0.3 },
-                }}
-                className="group relative bg-moss-800/40 rounded-2xl overflow-hidden border border-moss-700/30 hover:border-moss-600/50 transition-colors"
+                whileHover={{ y: -6, transition: { duration: 0.3 } }}
+                className="group relative rounded-2xl overflow-hidden border border-moss-700/30 hover:border-moss-600/50 transition-all"
               >
-                {/* Card image */}
-                <div className="relative h-52 overflow-hidden">
+                {/* Card image - tall, prominent */}
+                <div className="relative h-60 sm:h-72 overflow-hidden">
                   {photo ? (
-                    <motion.img
-                      src={heroImage(photo)}
-                      alt={plant.commonName}
-                      className="w-full h-full object-cover"
-                      whileHover={{ scale: 1.05 }}
-                      transition={{ duration: 0.4 }}
-                    />
+                    <>
+                      {/* Blurred background fill */}
+                      <img
+                        src={cardBackground(photo)}
+                        alt=""
+                        aria-hidden
+                        className="absolute inset-0 w-full h-full object-cover scale-110"
+                      />
+                      {/* Sharp foreground */}
+                      <motion.img
+                        src={heroImage(photo)}
+                        alt={plant.commonName}
+                        className="relative w-full h-full object-cover"
+                        whileHover={{ scale: 1.05 }}
+                        transition={{ duration: 0.4 }}
+                      />
+                    </>
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-moss-800 to-moss-900 flex items-center justify-center">
-                      <span className="text-4xl opacity-30">
+                    <div className="w-full h-full bg-gradient-to-br from-moss-800 via-moss-900 to-moss-950 flex flex-col items-center justify-center gap-2">
+                      <span className="text-5xl opacity-20">
                         {getCategoryIcon(plant.category)}
                       </span>
+                      <span className="font-mono text-[10px] text-moss-500 uppercase tracking-wider">
+                        Needs a photo!
+                      </span>
+                      <span className="text-lg opacity-30">{"\u{1F4F7}"}</span>
                     </div>
                   )}
+
                   {/* Gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-moss-900 via-transparent to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-moss-950/90 via-moss-950/20 to-transparent" />
 
                   {/* Status badge */}
                   <div className="absolute top-3 right-3">
@@ -158,47 +187,60 @@ export function PlantShowcase({ plants, logs }: PlantShowcaseProps) {
                       {status === "flowering" && (
                         <motion.span
                           className="inline-block mr-1"
-                          animate={{ scale: [1, 1.2, 1] }}
-                          transition={{
-                            repeat: Infinity,
-                            duration: 2,
-                            ease: "easeInOut",
-                          }}
+                          animate={{ scale: [1, 1.3, 1] }}
+                          transition={{ repeat: Infinity, duration: 2 }}
                         >
-                          \u2022
+                          {"\u2022"}
                         </motion.span>
                       )}
-                      {status}
+                      {getStatusLabel(status)}
                     </span>
                   </div>
 
-                  {/* Category icon */}
-                  <div className="absolute top-3 left-3 w-8 h-8 rounded-full bg-moss-900/70 backdrop-blur-sm flex items-center justify-center text-sm">
-                    {getCategoryIcon(plant.category)}
+                  {/* Photo count */}
+                  {photoCount > 0 && (
+                    <div className="absolute top-3 left-3 bg-moss-900/60 backdrop-blur-sm rounded-full px-2 py-0.5 flex items-center gap-1">
+                      <span className="text-[10px]">{"\u{1F4F7}"}</span>
+                      <span className="font-mono text-[10px] text-parchment-300">
+                        {photoCount}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Plant name overlay */}
+                  <div className="absolute bottom-0 left-0 right-0 p-4">
+                    <h3 className="font-display text-xl text-parchment-200 mb-0.5">
+                      {plant.commonName}
+                    </h3>
+                    <p className="font-body text-xs text-parchment-400/60 italic">
+                      {plant.latinName}
+                    </p>
                   </div>
                 </div>
 
-                {/* Card content */}
-                <div className="p-5">
-                  <h3 className="font-display text-xl text-parchment-200 mb-1">
-                    {plant.commonName}
-                  </h3>
-                  <p className="font-mono text-[10px] text-moss-400 uppercase tracking-wider mb-3">
-                    {plant.variety}
-                  </p>
-                  <p className="font-body text-xs text-parchment-500/60 italic mb-4">
-                    {plant.latinName}
-                  </p>
-
-                  {/* Stats row */}
-                  <div className="flex items-center justify-between border-t border-moss-700/30 pt-3">
-                    <div className="font-mono text-[10px] text-moss-400">
-                      <span className="text-parchment-400">{days}</span> days
-                      growing
-                    </div>
-                    <div className="font-mono text-[10px] text-moss-500">
+                {/* Card body */}
+                <div className="bg-moss-900/60 backdrop-blur-sm p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-mono text-[10px] text-moss-400 uppercase tracking-wider">
+                      {plant.variety}
+                    </span>
+                    <span className="font-mono text-[10px] text-moss-500">
                       {plant.location === "indoor" ? "\u{1F3E0}" : "\u{1F33F}"}{" "}
                       {plant.location}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between border-t border-moss-700/30 pt-2.5">
+                    <div className="font-mono text-[10px] text-moss-400">
+                      <Tooltip term="growing season">
+                        <span className="text-parchment-400">{days}</span> days growing
+                      </Tooltip>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs">{getCategoryIcon(plant.category)}</span>
+                      <span className="font-mono text-[10px] text-moss-500 capitalize">
+                        {plant.category}
+                      </span>
                     </div>
                   </div>
                 </div>

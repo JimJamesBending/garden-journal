@@ -3,8 +3,9 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef } from "react";
 import { Plant, LogEntry, GrowthEntry, CareEvent } from "@/lib/types";
-import { heroImage, galleryImage } from "@/lib/cloudinary";
+import { heroImage, galleryImage, cardBackground } from "@/lib/cloudinary";
 import { getCareProfile, getMonthlyTask, getCompanionAdvice, estimateHarvestDate } from "@/lib/plant-care";
+import { Tooltip } from "@/components/Tooltip";
 import { GrowthChart } from "./GrowthChart";
 
 interface PlantDetailProps {
@@ -163,30 +164,43 @@ export function PlantDetail({
       animate={{ x: 0 }}
       exit={{ x: "100%" }}
       transition={{ type: "spring", damping: 30, stiffness: 300 }}
-      className="min-h-screen"
+      className="min-h-screen relative"
     >
+      {/* Blurred photo backdrop */}
+      {sortedPhotos.length > 0 && (
+        <div className="fixed inset-0 pointer-events-none z-0">
+          <img
+            src={cardBackground(sortedPhotos[0].cloudinaryUrl)}
+            alt=""
+            aria-hidden
+            className="w-full h-full object-cover opacity-10"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-moss-950/80 to-moss-950/95" />
+        </div>
+      )}
+
       {/* Back button */}
       <button
         onClick={onBack}
-        className="flex items-center gap-1 px-4 py-3 font-mono text-xs text-moss-400 hover:text-parchment-300 transition-colors active:scale-95"
+        className="relative z-10 flex items-center gap-1 px-4 py-3 font-mono text-xs text-moss-400 hover:text-parchment-300 transition-colors active:scale-95"
       >
         {"\u2190"} Back to garden
       </button>
 
-      {/* Photo carousel */}
+      {/* Photo carousel — full width, taller */}
       {sortedPhotos.length > 0 && (
-        <div className="mb-4">
+        <div className="relative z-10 mb-4">
           <div className="overflow-x-auto flex gap-2 px-4 pb-2 snap-x snap-mandatory scrollbar-hide">
             {sortedPhotos.map((photo) => (
               <button
                 key={photo.id}
                 onClick={() => setLightboxUrl(galleryImage(photo.cloudinaryUrl))}
-                className="min-w-[280px] max-w-[320px] snap-start flex-shrink-0 rounded-xl overflow-hidden"
+                className="min-w-[85vw] max-w-[400px] snap-start flex-shrink-0 rounded-xl overflow-hidden"
               >
                 <img
                   src={heroImage(photo.cloudinaryUrl)}
                   alt={photo.caption}
-                  className="w-full h-48 object-cover"
+                  className="w-full h-[50vh] max-h-[400px] object-cover"
                   loading="lazy"
                 />
               </button>
@@ -209,7 +223,7 @@ export function PlantDetail({
       )}
 
       {/* Plant info */}
-      <div className="px-4 mb-4">
+      <div className="relative z-10 px-4 mb-4">
         <div className="bg-moss-800/40 border border-moss-700/30 rounded-xl p-4">
           <div className="flex items-start justify-between mb-2">
             <div>
@@ -254,7 +268,7 @@ export function PlantDetail({
       </div>
 
       {/* Sections */}
-      <div className="px-4 space-y-3 mb-24">
+      <div className="relative z-10 px-4 space-y-3 mb-24">
         {/* Growth Chart */}
         <button
           onClick={() => toggleSection("chart")}
@@ -373,7 +387,9 @@ export function PlantDetail({
                   {/* Quick stats grid */}
                   <div className="grid grid-cols-2 gap-2">
                     <div className="bg-moss-800/15 rounded-lg p-3">
-                      <div className="font-mono text-[8px] text-moss-500 uppercase mb-1">Water</div>
+                      <div className="font-mono text-[8px] text-moss-500 uppercase mb-1">
+                        <Tooltip term="liquid feed">Water</Tooltip>
+                      </div>
                       <p className="font-body text-xs text-parchment-400">{careProfile.wateringNeeds}</p>
                     </div>
                     <div className="bg-moss-800/15 rounded-lg p-3">
@@ -381,13 +397,17 @@ export function PlantDetail({
                       <p className="font-body text-xs text-parchment-400">{careProfile.sunRequirement}</p>
                     </div>
                     <div className="bg-moss-800/15 rounded-lg p-3">
-                      <div className="font-mono text-[8px] text-moss-500 uppercase mb-1">Soil pH</div>
+                      <div className="font-mono text-[8px] text-moss-500 uppercase mb-1">
+                        <Tooltip term="pH">Soil pH</Tooltip>
+                      </div>
                       <p className="font-body text-xs text-parchment-400">
                         {careProfile.soilPH.min} - {careProfile.soilPH.max}
                       </p>
                     </div>
                     <div className="bg-moss-800/15 rounded-lg p-3">
-                      <div className="font-mono text-[8px] text-moss-500 uppercase mb-1">Feed</div>
+                      <div className="font-mono text-[8px] text-moss-500 uppercase mb-1">
+                        <Tooltip term="NPK">Feed</Tooltip>
+                      </div>
                       <p className="font-body text-[10px] text-parchment-400 line-clamp-2">
                         {careProfile.feedingSchedule}
                       </p>
@@ -398,7 +418,7 @@ export function PlantDetail({
                   {companions && (
                     <div className="bg-moss-800/20 border border-moss-700/20 rounded-xl p-4">
                       <div className="font-mono text-[9px] text-moss-400 uppercase tracking-wider mb-2">
-                        Companion Planting
+                        <Tooltip term="companion planting">Companion Planting</Tooltip>
                       </div>
                       {companions.good.length > 0 && (
                         <p className="font-body text-[11px] text-parchment-400/80 mb-1">

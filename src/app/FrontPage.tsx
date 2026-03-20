@@ -1,10 +1,12 @@
 "use client";
 
-import { Plant, LogEntry, AdviceEntry } from "@/lib/types";
+import { Plant, LogEntry, AdviceEntry, Space } from "@/lib/types";
 import { ScrollProgress } from "@/components/public/ScrollProgress";
 import { HeroSection } from "@/components/public/HeroSection";
+import { PhotoShowcase } from "@/components/public/PhotoShowcase";
 import { PlantShowcase } from "@/components/public/PlantShowcase";
 import { WeatherDashboard } from "@/components/public/WeatherDashboard";
+import { SpacesMap } from "@/components/public/SpacesMap";
 import { PhotoTimeline } from "@/components/public/PhotoTimeline";
 import { AIGardenerPreview } from "@/components/public/AIGardenerPreview";
 import { Footer } from "@/components/public/Footer";
@@ -50,34 +52,42 @@ interface FrontPageProps {
     };
   } | null;
   advice: AdviceEntry[];
+  spaces: Space[];
 }
 
-export function FrontPage({ plants, logs, weather, advice }: FrontPageProps) {
+export function FrontPage({ plants, logs, weather, advice, spaces }: FrontPageProps) {
   return (
     <div className="relative">
       <ScrollProgress />
 
-      {/* Hero — full viewport */}
+      {/* 1. Hero — full viewport, photo background, dormouse mascot */}
       <HeroSection
         totalPlants={plants.length}
-        totalPhotos={logs.length}
+        totalPhotos={logs.filter((l) => l.labeled).length}
         currentTemp={weather?.current.tempCurrent}
         weatherCondition={weather?.current.condition}
+        logs={logs}
       />
 
-      {/* Plant showcase with filter */}
-      <PlantShowcase plants={plants} logs={logs} />
+      {/* 2. Photo Showcase — horizontal scrolling strip */}
+      <PhotoShowcase logs={logs} plants={plants} />
 
-      {/* Weather dashboard */}
+      {/* 3. Weather — compact expandable strip */}
       <WeatherDashboard weather={weather} />
 
-      {/* AI Gardener advice preview */}
+      {/* 4. Spaces Map — interactive greenhouse map with plant pins */}
+      <SpacesMap spaces={spaces} plants={plants} logs={logs} />
+
+      {/* 5. Plant Collection — larger cards with photo backgrounds */}
+      <PlantShowcase plants={plants} logs={logs} />
+
+      {/* 6. AI Gardener advice */}
       <AIGardenerPreview advice={advice} />
 
-      {/* Photo journal timeline */}
+      {/* 7. Photo journal timeline */}
       <PhotoTimeline logs={logs} plants={plants} />
 
-      {/* Footer */}
+      {/* 8. Footer */}
       <Footer />
     </div>
   );

@@ -198,3 +198,78 @@ export interface PlantProblem {
   cause: string;
   treatment: string;
 }
+
+// --- V3 Types: Spaces ---
+
+export type SpaceType =
+  | "greenhouse"
+  | "cold-frame"
+  | "windowsill"
+  | "raised-bed"
+  | "polytunnel"
+  | "shelf"
+  | "garden-bed";
+
+export interface PlantPosition {
+  plantId: string;
+  x: number;       // % position within the space (0-100)
+  y: number;       // % position within the space (0-100)
+  label?: string;   // e.g. "Top shelf, left"
+}
+
+export interface Space {
+  id: string;
+  name: string;                 // "Main Greenhouse", "Kitchen Windowsill"
+  type: SpaceType;
+  description: string;
+  backgroundImageUrl: string;   // Photo of the actual space
+  width: number;                // Relative grid units
+  height: number;
+  plantPositions: PlantPosition[];
+}
+
+// --- V3 Types: SaaS Skeleton ---
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  plan: SubscriptionPlan;
+  gardenId: string;
+}
+
+export type SubscriptionPlan = "free" | "grower" | "pro";
+
+export interface Garden {
+  id: string;
+  ownerId: string;
+  name: string;
+  location: { lat: number; lng: number };
+  spaces: Space[];
+}
+
+export interface Subscription {
+  plan: SubscriptionPlan;
+  features: string[];
+  priceMonthly: number;
+  stripePriceId: string;
+}
+
+// --- V3 Types: Plant Identification ---
+
+export interface PlantIdResult {
+  species: string;
+  commonName: string;
+  confidence: number;
+  family: string;
+  genus: string;
+  imageUrl?: string;
+}
+
+export interface PlantIdResponse {
+  results: PlantIdResult[];
+  query: {
+    images: string[];
+    organ: string;
+  };
+}

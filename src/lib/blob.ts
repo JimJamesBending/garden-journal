@@ -1,5 +1,5 @@
 import { put, list } from "@vercel/blob";
-import { Plant, LogEntry, GrowthEntry, CareEvent, SoilReading, AdviceEntry, WeatherSnapshot } from "./types";
+import { Plant, LogEntry, GrowthEntry, CareEvent, SoilReading, AdviceEntry, WeatherSnapshot, Space } from "./types";
 import seedPlants from "../../data/plants.json";
 
 const PLANTS_KEY = "garden-plants.json";
@@ -9,6 +9,7 @@ const CARE_KEY = "garden-care.json";
 const SOIL_KEY = "garden-soil.json";
 const ADVICE_KEY = "garden-advice.json";
 const WEATHER_KEY = "garden-weather.json";
+const SPACES_KEY = "garden-spaces.json";
 
 async function readBlob<T>(key: string, fallback: T): Promise<T> {
   try {
@@ -106,4 +107,14 @@ export async function getWeatherCache(): Promise<WeatherSnapshot[]> {
 
 export async function saveWeatherCache(snapshots: WeatherSnapshot[]): Promise<void> {
   await writeBlob(WEATHER_KEY, snapshots);
+}
+
+// --- Spaces ---
+
+export async function getSpaces(): Promise<Space[]> {
+  return readBlob<Space[]>(SPACES_KEY, []);
+}
+
+export async function saveSpaces(spaces: Space[]): Promise<void> {
+  await writeBlob(SPACES_KEY, spaces);
 }
