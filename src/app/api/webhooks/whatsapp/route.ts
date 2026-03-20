@@ -84,10 +84,20 @@ async function processMessage(
 
   try {
     // 1. Resolve user (find or create)
-    console.log("Step 1: Resolving user", phone, profileName);
-    const { gardenId, conversationId, isNew } =
-      await resolveWhatsAppUser(supabase, phone, profileName);
-    console.log("Step 1 done:", { gardenId, conversationId, isNew });
+    console.log("[HAZEL] Step 1: Resolving user", phone, profileName);
+    let gardenId: string;
+    let conversationId: string;
+    let isNew: boolean;
+    try {
+      const resolved = await resolveWhatsAppUser(supabase, phone, profileName);
+      gardenId = resolved.gardenId;
+      conversationId = resolved.conversationId;
+      isNew = resolved.isNew;
+      console.log("[HAZEL] Step 1 done:", { gardenId, conversationId, isNew });
+    } catch (stepErr) {
+      console.error("[HAZEL] Step 1 FAILED:", stepErr instanceof Error ? stepErr.message + "\n" + stepErr.stack : String(stepErr));
+      throw stepErr;
+    }
 
     // 2. Extract text and media
     let textContent = "";
@@ -98,36 +108,56 @@ async function processMessage(
     } else if (message.type === "image" && message.image) {
       textContent = message.image.caption || "Sent a photo";
 
-      // Download from Meta CDN and upload to Cloudinary
-      const { buffer, mimeType } = await downloadMedia(message.image.id);
-      const cloudinaryUrl = await uploadToCloudinary(buffer, mimeType);
-      imageUrls.push(cloudinaryUrl);
+      try {
+        const { buffer, mimeType } = await downloadMedia(message.image.id);
+        const cloudinaryUrl = await uploadToCloudinary(buffer, mimeType);
+        imageUrls.push(cloudinaryUrl);
+      } catch (mediaErr) {
+        console.error("[HAZEL] Step 2 media FAILED:", mediaErr instanceof Error ? mediaErr.message : String(mediaErr));
+        throw mediaErr;
+      }
     } else {
-      // Unsupported message type
       await sendTextMessage(
         phone,
         "I can read text messages and photos at the moment. Send me a picture of something growing and I will have a look!"
       );
       return;
     }
-    console.log("Step 2 done: text =", textContent);
+    console.log("[HAZEL] Step 2 done: text =", textContent);
 
     // 3. Save user message
-    await saveMessage(supabase, conversationId, "user", textContent, imageUrls);
-    console.log("Step 3 done: message saved");
+    try {
+      await saveMessage(supabase, conversationId, "user", textContent, imageUrls);
+      console.log("[HAZEL] Step 3 done: message saved");
+    } catch (stepErr) {
+      console.error("[HAZEL] Step 3 FAILED:", stepErr instanceof Error ? stepErr.message + "\n" + stepErr.stack : String(stepErr));
+      throw stepErr;
+    }
 
     // 4. Build garden context
-    const context = await buildGardenContext(supabase, gardenId, conversationId);
-    console.log("Step 4 done: context built, plantCount =", context.plantCount);
+    let context;
+    try {
+      context = await buildGardenContext(supabase, gardenId, conversationId);
+      console.log("[HAZEL] Step 4 done: plantCount =", context.plantCount, "isNew =", context.isNewUser);
+    } catch (stepErr) {
+      console.error("[HAZEL] Step 4 FAILED:", stepErr instanceof Error ? stepErr.message + "\n" + stepErr.stack : String(stepErr));
+      throw stepErr;
+    }
 
     // 5. Ask Hazel
-    console.log("Step 5: Asking Hazel...");
-    const hazelResponse = await askHazel({
-      userMessage: textContent,
-      imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
-      gardenContext: context,
-    });
-    console.log("Step 5 done: Hazel responded, length =", hazelResponse.text.length);
+    console.log("[HAZEL] Step 5: Asking Gemini...");
+    let hazelResponse;
+    try {
+      hazelResponse = await askHazel({
+        userMessage: textContent,
+        imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
+        gardenContext: context,
+      });
+      console.log("[HAZEL] Step 5 done: length =", hazelResponse.text.length);
+    } catch (stepErr) {
+      console.error("[HAZEL] Step 5 FAILED:", stepErr instanceof Error ? stepErr.message + "\n" + stepErr.stack : String(stepErr));
+      throw stepErr;
+    }
 
     // 6. Save identified plants
     if (hazelResponse.shouldSavePlants && hazelResponse.identifiedPlants.length > 0) {
@@ -144,7 +174,6 @@ async function processMessage(
             notes: plant.aiNotes,
           });
 
-          // If there's an image, create a log entry for it
           if (imageUrls.length > 0) {
             await createLog(supabase, gardenId, {
               plantId: createdPlant.id,
@@ -156,18 +185,22 @@ async function processMessage(
             });
           }
         } catch (plantErr) {
-          console.error("Error saving plant:", plantErr);
+          console.error("[HAZEL] Error saving plant:", plantErr);
         }
       }
     }
 
     // 7. Save Hazel's response
-    await saveMessage(supabase, conversationId, "assistant", hazelResponse.text);
+    try {
+      await saveMessage(supabase, conversationId, "assistant", hazelResponse.text);
+      console.log("[HAZEL] Step 7 done: response saved");
+    } catch (stepErr) {
+      console.error("[HAZEL] Step 7 FAILED (non-fatal):", String(stepErr));
+    }
 
     // 8. Build the reply
     let replyText = hazelResponse.text;
 
-    // For new users, append garden page URL
     if (isNew) {
       const { data: profile } = await supabase
         .from("profiles")
@@ -182,18 +215,20 @@ async function processMessage(
     }
 
     // 9. Send reply via WhatsApp
+    console.log("[HAZEL] Step 9: Sending reply, length =", replyText.length);
     await sendTextMessage(phone, replyText);
+    console.log("[HAZEL] DONE — reply sent successfully");
   } catch (err) {
-    console.error("Error processing message:", err);
+    const errMsg = err instanceof Error ? `${err.message}\n${err.stack}` : String(err);
+    console.error("[HAZEL] FATAL ERROR:", errMsg);
 
-    // Send a friendly error message
     try {
       await sendTextMessage(
         phone,
         "Sorry, I got a bit tangled up there. Could you try sending that again in a moment?"
       );
     } catch {
-      console.error("Failed to send error message");
+      console.error("[HAZEL] Failed to send error message");
     }
   }
 }
