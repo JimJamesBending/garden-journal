@@ -1,19 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
-import { identifyPlant } from "@/lib/plant-id";
-import type { PhotoCategory, PlantIdResult } from "@/lib/types";
+import type { PhotoCategory } from "@/lib/types";
 
 /**
  * POST /api/wizard/sort
  *
- * Sends batch of photo URLs to Gemini Flash for categorisation + OCR.
- * Then calls PlantNet for plant photos (species identification).
+ * Sends batch of photo URLs to Gemini 2.5 Flash for:
+ * - Photo categorisation (plant/label/soil/overview/unclear)
+ * - OCR on labels
+ * - Plant species identification (replaces PlantNet — free, no limits)
  *
- * Uses Gemini 2.5 Flash — free tier: 250 req/day, $0 cost.
+ * Free tier: 250 req/day, £0 cost.
  *
  * Body: { photoUrls: string[], password: string }
- *
- * Returns: { results: Array<{ url, category, confidence, ocrText, plantIdSuggestion, aiNotes }> }
  */
 export async function POST(req: NextRequest) {
   try {
@@ -55,7 +54,7 @@ export async function POST(req: NextRequest) {
       })
     );
 
-    // --- Call Gemini Flash Vision API ---
+    // --- Single Gemini call: categorise + OCR + plant ID ---
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
     const result = await ai.models.generateContent({
@@ -63,26 +62,38 @@ export async function POST(req: NextRequest) {
       contents: [
         ...imageContents,
         {
-          text: `You are a garden photo assistant for a UK gardener. I'm showing you ${photoUrls.length} garden photos. For EACH image (in order), classify it into exactly one category:
+          text: `You are an expert garden photo assistant for a UK gardener. I'm showing you ${photoUrls.length} garden photos. For EACH image (in order), do ALL of the following:
 
-- "plant": Close-up photo of a living plant, leaves, flowers, fruit, or seedlings
-- "label": Seed packet, plant label, price tag, care instructions, or any text/packaging
-- "overview": Wide shot of a garden bed, greenhouse, windowsill, polytunnel, or growing area
-- "soil": Photo of soil, ground, compost, pots with just soil, or empty growing medium
-- "unclear": Cannot determine what this is
+1. CLASSIFY into exactly one category:
+   - "plant": Close-up of a living plant, leaves, flowers, fruit, or seedlings
+   - "label": Seed packet, plant label, price tag, care instructions, or text/packaging
+   - "overview": Wide shot of a garden bed, greenhouse, windowsill, polytunnel, or growing area
+   - "soil": Photo of soil, ground, compost, pots with just soil, or empty growing medium
+   - "unclear": Cannot determine what this is
 
-For EACH image, also:
-1. Give a confidence score (0-100) for your classification
-2. If it's a "label" photo, read ALL visible text (OCR) and include it
-3. Write brief notes about what you see (useful for captions)
+2. CONFIDENCE: Score 0-100 for your classification
+
+3. OCR: If it's a "label" photo, read ALL visible text and include it. Null for non-labels.
+
+4. IDENTIFY: If it's a "plant" photo, identify the species. Include:
+   - species (Latin name, e.g. "Fragaria × ananassa")
+   - commonName (English, e.g. "Strawberry")
+   - idConfidence (0-100, how sure you are of the ID)
+   - family (e.g. "Rosaceae")
+   - genus (e.g. "Fragaria")
+   Set plantId to null for non-plant photos.
+
+5. NOTES: Brief description of what you see (under 80 chars, useful for captions)
 
 Respond ONLY with valid JSON in this exact format:
-{"results":[{"index":0,"category":"plant","confidence":95,"ocrText":null,"notes":"Young strawberry seedling with trifoliate leaves, about 5cm tall"}]}
+{"results":[{"index":0,"category":"plant","confidence":95,"ocrText":null,"plantId":{"species":"Fragaria × ananassa","commonName":"Strawberry","idConfidence":85,"family":"Rosaceae","genus":"Fragaria"},"notes":"Young strawberry seedling with trifoliate leaves, about 5cm tall"}]}
 
-Important:
+Rules:
 - Index must match the image order (0-based)
-- ocrText should be null for non-label photos
-- Keep notes concise (under 80 characters)
+- ocrText must be null for non-label photos
+- plantId must be null for non-plant photos
+- If you can't identify the plant species, still set plantId but with low idConfidence
+- For UK garden plants, prefer common UK names (courgette not zucchini, aubergine not eggplant)
 - Return one result per image, even if unclear`,
         },
       ],
@@ -94,7 +105,7 @@ Important:
       throw new Error("No text response from Gemini");
     }
 
-    // Extract JSON from response (handle markdown code blocks)
+    // Extract JSON (handle markdown code blocks)
     let jsonStr = responseText;
     if (jsonStr.startsWith("```")) {
       jsonStr = jsonStr.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
@@ -106,47 +117,44 @@ Important:
         category: PhotoCategory;
         confidence: number;
         ocrText: string | null;
+        plantId: {
+          species: string;
+          commonName: string;
+          idConfidence: number;
+          family: string;
+          genus: string;
+        } | null;
         notes: string;
       }>;
     };
 
-    // --- Call PlantNet for plant photos ---
-    const results = await Promise.all(
-      photoUrls.map(async (url: string, i: number) => {
-        const sortResult = parsed.results.find((r) => r.index === i) || {
-          category: "unclear" as PhotoCategory,
-          confidence: 50,
-          ocrText: null,
-          notes: "",
-        };
+    // Map to our response format
+    const results = photoUrls.map((url: string, i: number) => {
+      const sortResult = parsed.results.find((r) => r.index === i) || {
+        category: "unclear" as PhotoCategory,
+        confidence: 50,
+        ocrText: null,
+        plantId: null,
+        notes: "",
+      };
 
-        let plantIdSuggestion: PlantIdResult | null = null;
-
-        // Try PlantNet for plant photos (only if API key is set)
-        if (sortResult.category === "plant" && process.env.PLANTNET_API_KEY) {
-          try {
-            const idResult = await identifyPlant({
-              imageUrls: [url],
-              organ: "auto",
-            });
-            if (idResult.results.length > 0) {
-              plantIdSuggestion = idResult.results[0];
+      return {
+        url,
+        category: sortResult.category,
+        confidence: sortResult.confidence,
+        ocrText: sortResult.ocrText,
+        plantIdSuggestion: sortResult.plantId
+          ? {
+              species: sortResult.plantId.species,
+              commonName: sortResult.plantId.commonName,
+              confidence: sortResult.plantId.idConfidence,
+              family: sortResult.plantId.family,
+              genus: sortResult.plantId.genus,
             }
-          } catch {
-            // PlantNet failure is non-fatal
-          }
-        }
-
-        return {
-          url,
-          category: sortResult.category,
-          confidence: sortResult.confidence,
-          ocrText: sortResult.ocrText,
-          plantIdSuggestion,
-          aiNotes: sortResult.notes,
-        };
-      })
-    );
+          : null,
+        aiNotes: sortResult.notes,
+      };
+    });
 
     return NextResponse.json({ results });
   } catch (err) {
