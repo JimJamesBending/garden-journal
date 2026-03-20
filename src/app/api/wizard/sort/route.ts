@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
+import { checkPassword } from "@/lib/auth";
 import type { PhotoCategory } from "@/lib/types";
 
 /**
@@ -19,8 +20,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { photoUrls, password } = body;
 
-    // Auth check
-    if (password !== process.env.GARDEN_PASSWORD) {
+    // Auth check — same password as portal login
+    if (!checkPassword(password)) {
       return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
     }
 
