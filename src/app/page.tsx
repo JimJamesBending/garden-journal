@@ -4,6 +4,48 @@ import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
+function HazelWhatsAppSection() {
+  const phoneNumber = process.env.NEXT_PUBLIC_HAZEL_PHONE_NUMBER || "";
+  const cleanNumber = phoneNumber.replace(/\+/g, "");
+  const whatsappLink = `https://wa.me/${cleanNumber}?text=Hello%20Hazel`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(whatsappLink)}`;
+
+  if (!cleanNumber) return null;
+
+  return (
+    <div className="mt-12 pt-8 border-t border-garden-border w-full">
+      <div className="text-center">
+        <h2 className="text-heading-sm text-garden-text mb-2">
+          Chat with Hazel on WhatsApp
+        </h2>
+        <p className="text-body text-garden-textMuted mb-6">
+          Send a photo of your plant and get instant advice
+        </p>
+
+        {/* QR Code */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={qrUrl}
+          alt="Scan to chat with Hazel on WhatsApp"
+          width={200}
+          height={200}
+          className="mx-auto mb-4 rounded-lg"
+        />
+
+        {/* WhatsApp Button */}
+        <a
+          href={whatsappLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-[#25D366] text-white font-semibold text-lg transition-colors hover:bg-[#1da851]"
+        >
+          🌱 Open WhatsApp
+        </a>
+      </div>
+    </div>
+  );
+}
+
 export default async function HomePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -59,6 +101,9 @@ export default async function HomePage() {
             Sign in
           </Link>
         </p>
+
+        {/* Hazel WhatsApp Section */}
+        <HazelWhatsAppSection />
       </div>
     </div>
   );

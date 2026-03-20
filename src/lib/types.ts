@@ -380,3 +380,70 @@ export interface WizardProcessResponse {
   };
   errors: string[];
 }
+
+// --- Hazel WhatsApp Types ---
+
+export interface Conversation {
+  id: string;
+  profileId: string;
+  channel: "whatsapp" | "messenger" | "web";
+  channelUserId: string;
+  startedAt: string;
+  lastMessageAt: string;
+}
+
+export interface Message {
+  id: string;
+  conversationId: string;
+  role: "user" | "assistant";
+  content: string;
+  mediaUrls: string[];
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface HazelResponse {
+  text: string;
+  identifiedPlants: IdentifiedPlant[];
+  shouldSavePlants: boolean;
+}
+
+export interface IdentifiedPlant {
+  commonName: string;
+  latinName: string;
+  confidence: number;
+  category: "fruit" | "vegetable" | "herb" | "flower";
+  variety: string;
+  aiNotes: string;
+}
+
+export interface WhatsAppWebhookEntry {
+  id: string;
+  changes: Array<{
+    value: {
+      messaging_product: string;
+      metadata: {
+        display_phone_number: string;
+        phone_number_id: string;
+      };
+      contacts?: Array<{
+        profile: { name: string };
+        wa_id: string;
+      }>;
+      messages?: Array<{
+        from: string;
+        id: string;
+        timestamp: string;
+        type: "text" | "image" | "audio" | "video" | "document";
+        text?: { body: string };
+        image?: { id: string; mime_type: string; caption?: string };
+      }>;
+    };
+    field: string;
+  }>;
+}
+
+export interface WhatsAppWebhookBody {
+  object: string;
+  entry: WhatsAppWebhookEntry[];
+}
