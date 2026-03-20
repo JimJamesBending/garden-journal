@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { AnimatePresence } from "framer-motion";
 import { Plant, LogEntry, GrowthEntry, CareEvent, AdviceEntry, WeatherSnapshot, Space } from "@/lib/types";
 import { WeatherStrip } from "./WeatherStrip";
@@ -31,11 +32,8 @@ interface DashboardData {
 }
 
 export default function GardenPortal() {
-  const [password, setPassword] = useState("");
-  const [authenticated, setAuthenticated] = useState(false);
-  const [error, setError] = useState("");
   const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [selectedPlantId, setSelectedPlantId] = useState<string | null>(null);
   const [showPhotoJournal, setShowPhotoJournal] = useState(false);
   const [showPhotoWizard, setShowPhotoWizard] = useState(false);
@@ -43,6 +41,10 @@ export default function GardenPortal() {
   const fetchData = useCallback(async () => {
     try {
       const res = await fetch("/api/dashboard");
+      if (res.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
       if (res.ok) {
         const d = await res.json();
         setData(d);
@@ -50,69 +52,19 @@ export default function GardenPortal() {
     } catch {}
   }, []);
 
-  const handleAuth = async () => {
-    try {
-      const res = await fetch("/api/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
-      });
-      if (res.ok) {
-        setAuthenticated(true);
-        setError("");
-        setLoading(true);
-        await fetchData();
-        setLoading(false);
-      } else {
-        setError("Wrong password");
-      }
-    } catch {
-      setError("Connection failed \u2014 try again");
-    }
+  useEffect(() => {
+    fetchData().then(() => setLoading(false));
+  }, [fetchData]);
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.href = "/login";
   };
 
   const refreshData = useCallback(async () => {
     await fetchData();
   }, [fetchData]);
-
-  // --- Auth screen ---
-  if (!authenticated) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <div className="max-w-sm mx-auto pt-20 px-6">
-          <div className="text-center mb-8">
-            <span className="text-4xl block mb-3">{"\u{1F33F}"}</span>
-            <h2 className="font-display text-4xl text-parchment-200 mb-2">
-              Garden Portal
-            </h2>
-            <p className="font-mono text-xs text-moss-500">
-              Your AI gardening companion
-            </p>
-          </div>
-          <div className="bg-night-900/40 border border-moss-800/30 rounded-lg p-6">
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleAuth()}
-              className="w-full bg-night-950/80 border border-moss-800/50 rounded-lg px-4 py-3 text-parchment-300 font-body text-base focus:outline-none focus:border-moss-600 mb-4"
-              placeholder="Password"
-              autoFocus
-            />
-            {error && (
-              <p className="font-mono text-xs text-red-400 mb-4">{error}</p>
-            )}
-            <button
-              onClick={handleAuth}
-              className="w-full bg-moss-700 hover:bg-moss-600 text-parchment-200 font-mono text-sm py-3 rounded-lg transition-colors active:scale-95"
-            >
-              Enter
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // --- Loading ---
   if (loading || !data) {
@@ -135,7 +87,6 @@ export default function GardenPortal() {
         plants={data.plants}
         logs={data.logs}
         spaces={[] as Space[]}
-        password={password}
         onBack={() => setShowPhotoWizard(false)}
         onRefresh={refreshData}
       />
@@ -148,7 +99,6 @@ export default function GardenPortal() {
       <PhotoJournal
         logs={data.logs}
         plants={data.plants}
-        password={password}
         onBack={() => setShowPhotoJournal(false)}
         onRefresh={refreshData}
       />
@@ -173,7 +123,6 @@ export default function GardenPortal() {
           )}
           growthData={data.growth.filter((g) => g.plantId === selectedPlantId)}
           careEvents={data.care.filter((e) => e.plantId === selectedPlantId)}
-          password={password}
           onBack={() => setSelectedPlantId(null)}
           onRefresh={refreshData}
         />
@@ -207,6 +156,12 @@ export default function GardenPortal() {
           >
             View Site {"\u2192"}
           </a>
+          <button
+            onClick={handleLogout}
+            className="font-mono text-xs text-moss-400 hover:text-red-400 transition-colors"
+          >
+            Logout
+          </button>
         </div>
       </div>
 
@@ -227,7 +182,6 @@ export default function GardenPortal() {
           advice={data.advice}
           plants={data.plants}
           logs={data.logs}
-          password={password}
           onRefresh={refreshData}
         />
 
@@ -261,7 +215,6 @@ export default function GardenPortal() {
       <QuickActions
         plants={data.plants}
         logs={data.logs}
-        password={password}
         onRefresh={refreshData}
         onShowPhotos={() => setShowPhotoJournal(true)}
         onShowWizard={() => setShowPhotoWizard(true)}

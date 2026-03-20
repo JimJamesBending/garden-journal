@@ -8,13 +8,12 @@ import { thumbnail } from "@/lib/cloudinary";
 interface QuickActionsProps {
   plants: Plant[];
   logs: LogEntry[];
-  password: string;
   onRefresh: () => void;
   onShowPhotos: () => void;
   onShowWizard?: () => void;
 }
 
-export function QuickActions({ plants, logs, password, onRefresh, onShowPhotos, onShowWizard }: QuickActionsProps) {
+export function QuickActions({ plants, logs, onRefresh, onShowPhotos, onShowWizard }: QuickActionsProps) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"menu" | "water" | "feed" | null>(null);
   const [logging, setLogging] = useState(false);
@@ -36,7 +35,6 @@ export function QuickActions({ plants, logs, password, onRefresh, onShowPhotos, 
           type,
           date: new Date().toISOString().split("T")[0],
           notes: "",
-          password,
         }),
       });
       onRefresh();
@@ -70,7 +68,6 @@ export function QuickActions({ plants, logs, password, onRefresh, onShowPhotos, 
           plantId: "",
           caption: "",
           status: "sowed",
-          password,
         }),
       });
       onRefresh();

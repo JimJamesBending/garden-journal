@@ -17,7 +17,6 @@ interface PhotoWizardProps {
   plants: Plant[];
   logs: LogEntry[];
   spaces: Space[];
-  password: string;
   onBack: () => void;
   onRefresh: () => void;
 }
@@ -36,7 +35,6 @@ export function PhotoWizard({
   plants,
   logs,
   spaces,
-  password,
   onBack,
   onRefresh,
 }: PhotoWizardProps) {
@@ -112,7 +110,7 @@ export function PhotoWizard({
       const res = await fetch("/api/wizard/sort", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ photoUrls, password }),
+        body: JSON.stringify({ photoUrls }),
       });
 
       if (!res.ok) {
@@ -128,7 +126,7 @@ export function PhotoWizard({
         error: err instanceof Error ? err.message : "Failed to sort photos",
       });
     }
-  }, [state.photos, password]);
+  }, [state.photos]);
 
   // --- Generate questions from sort results ---
   const handleSortConfirm = useCallback(() => {
@@ -158,7 +156,7 @@ export function PhotoWizard({
       const res = await fetch("/api/wizard/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ actions, password }),
+        body: JSON.stringify({ actions }),
       });
 
       if (!res.ok) {
@@ -179,7 +177,7 @@ export function PhotoWizard({
         error: err instanceof Error ? err.message : "Failed to process",
       });
     }
-  }, [state.photos, state.questions, state.answers, plants, password]);
+  }, [state.photos, state.questions, state.answers, plants]);
 
   // --- When questions are all answered, trigger processing ---
   const handleAnswer = useCallback(

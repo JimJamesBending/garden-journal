@@ -1,4 +1,9 @@
-export function checkPassword(password: string | undefined): boolean {
-  const expected = process.env.LOG_PASSWORD || "2303";
-  return password === expected;
+import { SupabaseClient } from "@supabase/supabase-js";
+
+export async function getAuthenticatedUser(supabase: SupabaseClient) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+  return user;
 }

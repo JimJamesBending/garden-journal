@@ -1,36 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSpaces, saveSpaces } from "@/lib/blob";
-import { Space } from "@/lib/types";
+import { createClient } from "@/lib/supabase/server";
+import { getGardenId, getSpaces, createSpace, updateSpace } from "@/lib/supabase/queries";
 
 export async function GET() {
-  const spaces = await getSpaces();
-  return NextResponse.json(spaces);
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const gardenId = await getGardenId(supabase);
+    const spaces = await getSpaces(supabase, gardenId);
+    return NextResponse.json(spaces);
+  } catch (error) {
+    console.error("Spaces GET error:", error);
+    return NextResponse.json({ error: "Failed to fetch spaces" }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { password, ...spaceData } = body;
-
-    if (password !== process.env.GARDEN_PASSWORD) {
-      return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const spaces = await getSpaces();
+    const gardenId = await getGardenId(supabase);
+    const body = await req.json();
 
-    const newSpace: Space = {
-      id: `space-${Date.now()}`,
-      name: spaceData.name || "New Space",
-      type: spaceData.type || "greenhouse",
-      description: spaceData.description || "",
-      backgroundImageUrl: spaceData.backgroundImageUrl || "",
-      width: spaceData.width || 100,
-      height: spaceData.height || 60,
-      plantPositions: spaceData.plantPositions || [],
-    };
-
-    spaces.push(newSpace);
-    await saveSpaces(spaces);
+    const newSpace = await createSpace(supabase, gardenId, {
+      name: body.name || "New Space",
+      type: body.type || "greenhouse",
+      description: body.description || "",
+      backgroundImageUrl: body.backgroundImageUrl || "",
+      width: body.width || 100,
+      height: body.height || 60,
+      plantPositions: body.plantPositions || [],
+    });
 
     return NextResponse.json(newSpace, { status: 201 });
   } catch {
@@ -40,24 +52,23 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
-    const { password, id, ...updates } = body;
+    const { id, ...updates } = body;
 
-    if (password !== process.env.GARDEN_PASSWORD) {
-      return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+    if (!id) {
+      return NextResponse.json({ error: "Space ID is required" }, { status: 400 });
     }
 
-    const spaces = await getSpaces();
-    const index = spaces.findIndex((s) => s.id === id);
-
-    if (index === -1) {
-      return NextResponse.json({ error: "Space not found" }, { status: 404 });
-    }
-
-    spaces[index] = { ...spaces[index], ...updates };
-    await saveSpaces(spaces);
-
-    return NextResponse.json(spaces[index]);
+    const updated = await updateSpace(supabase, id, updates);
+    return NextResponse.json(updated);
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }

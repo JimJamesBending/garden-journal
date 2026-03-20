@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { identifyPlant, findMatchingPlant } from "@/lib/plant-id";
-import { getPlants } from "@/lib/blob";
+import { createClient } from "@/lib/supabase/server";
+import { getGardenId, getPlants } from "@/lib/supabase/queries";
 
 /**
  * POST /api/identify
@@ -9,9 +10,8 @@ import { getPlants } from "@/lib/blob";
  * Keeps the PlantNet API key server-side.
  *
  * Body: {
- *   imageUrls: string[]    — Cloudinary URLs of the plant photos
- *   organ?: string          — "leaf" | "flower" | "fruit" | "bark" | "auto"
- *   password: string        — garden password
+ *   imageUrls: string[]    -- Cloudinary URLs of the plant photos
+ *   organ?: string          -- "leaf" | "flower" | "fruit" | "bark" | "auto"
  * }
  *
  * Returns: {
@@ -22,13 +22,18 @@ import { getPlants } from "@/lib/blob";
  */
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { imageUrls, organ, password } = body;
-
-    // Auth check
-    if (password !== process.env.GARDEN_PASSWORD) {
-      return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const gardenId = await getGardenId(supabase);
+
+    const body = await req.json();
+    const { imageUrls, organ } = body;
 
     if (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
       return NextResponse.json(
@@ -52,7 +57,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Check for existing plant match
-    const plants = await getPlants();
+    const plants = await getPlants(supabase, gardenId);
     let existingMatch = null;
 
     if (idResult.results.length > 0) {

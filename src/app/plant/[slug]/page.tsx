@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import {
   getPlantBySlug,
@@ -19,12 +19,34 @@ export default async function PlantPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const plant = await getPlantBySlug(slug);
+
+  let plant;
+  try {
+    plant = await getPlantBySlug(slug);
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e);
+    if (message === "Not authenticated" || message === "No garden found") {
+      redirect("/login");
+    }
+    throw e;
+  }
+
   if (!plant) notFound();
 
-  const logs = await getLogsForPlant(plant.id);
+  let logs;
+  let status;
+  try {
+    logs = await getLogsForPlant(plant.id);
+    status = await getLatestStatus(plant.id);
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e);
+    if (message === "Not authenticated" || message === "No garden found") {
+      redirect("/login");
+    }
+    throw e;
+  }
+
   const days = daysSince(plant.sowDate);
-  const status = await getLatestStatus(plant.id);
   const emoji = getCategoryEmoji(plant.category);
 
   const sowDate = new Date(plant.sowDate).toLocaleDateString("en-GB", {

@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 import {
+  getGardenId,
   getPlants,
-  savePlants,
-  getLogs,
-  saveLogs,
-  getCareEvents,
-  saveCareEvents,
-} from "@/lib/blob";
-import { checkPassword } from "@/lib/auth";
-import type { Plant, LogEntry, CareEvent, WizardAction } from "@/lib/types";
+  createPlant,
+  createLog,
+  createCareEvent,
+} from "@/lib/supabase/queries";
+import type { WizardAction } from "@/lib/types";
 
 /**
  * POST /api/wizard/process
@@ -16,19 +15,24 @@ import type { Plant, LogEntry, CareEvent, WizardAction } from "@/lib/types";
  * Batch-execute all wizard actions: create plants, logs, care events.
  * Handles temp ID mapping for new plants.
  *
- * Body: { actions: WizardAction[], password: string }
+ * Body: { actions: WizardAction[] }
  *
  * Returns: { created: { plants, logs, careEvents, growthEntries }, createdIds, errors }
  */
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { actions, password } = body as { actions: WizardAction[]; password: string };
-
-    // Auth check — same password as portal login
-    if (!checkPassword(password)) {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
       return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
     }
+
+    const gardenId = await getGardenId(supabase);
+
+    const body = await req.json();
+    const { actions } = body as { actions: WizardAction[] };
 
     if (!actions || !Array.isArray(actions) || actions.length === 0) {
       return NextResponse.json(
@@ -37,14 +41,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Load current data
-    const [plants, logs, careEvents] = await Promise.all([
-      getPlants(),
-      getLogs(),
-      getCareEvents(),
-    ]);
+    // Load current plants (for duplicate detection)
+    const existingPlants = await getPlants(supabase, gardenId);
 
-    // Track temp ID → real ID mapping
+    // Track temp ID -> real ID mapping
     const idMap = new Map<string, string>();
     const createdPlantIds: string[] = [];
     const createdLogIds: string[] = [];
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
         };
 
         // Check for duplicate
-        const existing = plants.find(
+        const existing = existingPlants.find(
           (p) => p.commonName.toLowerCase() === data.commonName.toLowerCase()
         );
         if (existing) {
@@ -81,14 +81,7 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        const slug = data.commonName
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-|-$/g, "");
-
-        const newPlant: Plant = {
-          id: `plant-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          slug,
+        const newPlant = await createPlant(supabase, gardenId, {
           commonName: data.commonName,
           variety: data.variety || "",
           latinName: data.latinName || "",
@@ -98,11 +91,12 @@ export async function POST(req: NextRequest) {
           category: (data.category as "fruit" | "vegetable" | "herb" | "flower") || "vegetable",
           notes: data.notes || "",
           seedSource: data.seedSource || "",
-        };
+        });
 
-        plants.push(newPlant);
         idMap.set(data.tempId, newPlant.id);
         createdPlantIds.push(newPlant.id);
+        // Also add to existingPlants so subsequent duplicates are caught
+        existingPlants.push(newPlant);
         plantsCreated++;
       } catch (e) {
         errors.push(`Failed to create plant: ${e instanceof Error ? e.message : "unknown"}`);
@@ -129,17 +123,15 @@ export async function POST(req: NextRequest) {
 
         const labeled = !!(plantId && data.caption);
 
-        const newLog: LogEntry = {
-          id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        const newLog = await createLog(supabase, gardenId, {
           plantId,
           date: new Date().toISOString().split("T")[0],
           cloudinaryUrl: data.cloudinaryUrl,
           caption: data.caption || "",
-          status: (data.status as LogEntry["status"]) || "sowed",
+          status: (data.status as "sowed" | "germinated" | "transplanted" | "flowering" | "harvested") || "sowed",
           labeled,
-        };
+        });
 
-        logs.push(newLog);
         createdLogIds.push(newLog.id);
         logsCreated++;
       } catch (e) {
@@ -168,28 +160,19 @@ export async function POST(req: NextRequest) {
 
         if (!plantId) continue;
 
-        const newCare: CareEvent = {
-          id: `care-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        await createCareEvent(supabase, gardenId, {
           plantId,
-          type: (data.type as CareEvent["type"]) || "observed",
+          type: (data.type as "watered" | "fed" | "pruned" | "repotted" | "treated" | "harvested" | "observed") || "observed",
           date: data.date,
           notes: data.notes || "",
           quantity: data.quantity || "",
-        };
+        });
 
-        careEvents.push(newCare);
         careEventsCreated++;
       } catch (e) {
         errors.push(`Failed to create care event: ${e instanceof Error ? e.message : "unknown"}`);
       }
     }
-
-    // --- Save all data ---
-    await Promise.all([
-      savePlants(plants),
-      saveLogs(logs),
-      saveCareEvents(careEvents),
-    ]);
 
     return NextResponse.json({
       created: {

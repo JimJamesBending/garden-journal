@@ -8,12 +8,11 @@ import { galleryImage, thumbnail } from "@/lib/cloudinary";
 interface PhotoJournalProps {
   logs: LogEntry[];
   plants: Plant[];
-  password: string;
   onBack: () => void;
   onRefresh: () => void;
 }
 
-export function PhotoJournal({ logs, plants, password, onBack, onRefresh }: PhotoJournalProps) {
+export function PhotoJournal({ logs, plants, onBack, onRefresh }: PhotoJournalProps) {
   const [filter, setFilter] = useState<string>("all");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -62,7 +61,6 @@ export function PhotoJournal({ logs, plants, password, onBack, onRefresh }: Phot
           plantId: "",
           caption: "",
           status: "sowed",
-          password,
         }),
       });
       onRefresh();

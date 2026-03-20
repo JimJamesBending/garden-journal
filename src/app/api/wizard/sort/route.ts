@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
-import { checkPassword } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import type { PhotoCategory } from "@/lib/types";
 
 /**
@@ -9,21 +9,24 @@ import type { PhotoCategory } from "@/lib/types";
  * Sends batch of photo URLs to Gemini 2.5 Flash for:
  * - Photo categorisation (plant/label/soil/overview/unclear)
  * - OCR on labels
- * - Plant species identification (replaces PlantNet — free, no limits)
+ * - Plant species identification (replaces PlantNet -- free, no limits)
  *
- * Free tier: 250 req/day, £0 cost.
+ * Free tier: 250 req/day, 0 cost.
  *
- * Body: { photoUrls: string[], password: string }
+ * Body: { photoUrls: string[] }
  */
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { photoUrls, password } = body;
-
-    // Auth check — same password as portal login
-    if (!checkPassword(password)) {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
       return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
     }
+
+    const body = await req.json();
+    const { photoUrls } = body;
 
     if (!photoUrls || !Array.isArray(photoUrls) || photoUrls.length === 0) {
       return NextResponse.json(

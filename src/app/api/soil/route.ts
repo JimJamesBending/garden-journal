@@ -1,32 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSoilReadings, saveSoilReadings } from "@/lib/blob";
-import { checkPassword } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import {
+  getGardenId,
+  getSoilReadings,
+  createSoilReading,
+} from "@/lib/supabase/queries";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const plantId = searchParams.get("plantId");
+  const plantId = searchParams.get("plantId") || undefined;
 
-  let readings = await getSoilReadings();
+  const supabase = await createClient();
+  const gardenId = await getGardenId(supabase);
 
-  if (plantId) {
-    readings = readings.filter((r) => r.plantId === plantId);
-  }
-
-  readings.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const readings = await getSoilReadings(supabase, gardenId, plantId);
 
   return NextResponse.json(readings);
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
+  const supabase = await createClient();
 
-  if (!checkPassword(body.password)) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { plantId, ph, nitrogen, phosphorus, potassium, moisture, notes, date } = body;
+  const body = await request.json();
+  const { plantId, ph, nitrogen, phosphorus, potassium, moisture, notes, date } =
+    body;
 
   if (!plantId) {
     return NextResponse.json(
@@ -35,8 +41,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const reading = {
-    id: `soil-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+  const gardenId = await getGardenId(supabase);
+
+  const reading = await createSoilReading(supabase, gardenId, {
     plantId,
     date: date || new Date().toISOString().split("T")[0],
     ph: ph ?? null,
@@ -45,11 +52,7 @@ export async function POST(request: NextRequest) {
     potassium: potassium ?? null,
     moisture: moisture ?? null,
     notes: notes || "",
-  };
-
-  const readings = await getSoilReadings();
-  readings.push(reading);
-  await saveSoilReadings(readings);
+  });
 
   return NextResponse.json(reading, { status: 201 });
 }

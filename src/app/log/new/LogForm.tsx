@@ -19,8 +19,6 @@ export function LogForm() {
   const [caption, setCaption] = useState("");
   const [status, setStatus] = useState<string>("sowed");
   const [imageUrl, setImageUrl] = useState("");
-  const [password, setPassword] = useState("");
-  const [authenticated, setAuthenticated] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -31,20 +29,6 @@ export function LogForm() {
       .then(setPlants)
       .catch(() => {});
   }, []);
-
-  const handleAuth = async () => {
-    const res = await fetch("/api/auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
-    if (res.ok) {
-      setAuthenticated(true);
-      setError("");
-    } else {
-      setError("Wrong password");
-    }
-  };
 
   const handleSubmit = async () => {
     if (!plantId || !imageUrl || !caption) {
@@ -64,7 +48,6 @@ export function LogForm() {
           caption,
           status,
           cloudinaryUrl: imageUrl,
-          password,
         }),
       });
 
@@ -80,38 +63,6 @@ export function LogForm() {
       setSubmitting(false);
     }
   };
-
-  if (!authenticated) {
-    return (
-      <div className="max-w-md mx-auto">
-        <h2 className="font-display text-3xl text-parchment-200 mb-6">
-          Add Photo Log
-        </h2>
-        <div className="bg-night-900/40 border border-moss-800/30 rounded-lg p-6">
-          <label className="block mb-2 font-mono text-xs text-moss-500 uppercase tracking-wider">
-            Password
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleAuth()}
-            className="w-full bg-night-950/80 border border-moss-800/50 rounded px-3 py-2 text-parchment-300 font-body text-sm focus:outline-none focus:border-moss-600 mb-4"
-            placeholder="Enter garden password"
-          />
-          {error && (
-            <p className="font-mono text-xs text-red-400 mb-4">{error}</p>
-          )}
-          <button
-            onClick={handleAuth}
-            className="w-full bg-moss-700 hover:bg-moss-600 text-parchment-200 font-mono text-sm py-2 rounded transition-colors"
-          >
-            Enter Garden
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   if (success) {
     return (

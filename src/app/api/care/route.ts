@@ -1,33 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCareEvents, saveCareEvents } from "@/lib/blob";
-import { checkPassword } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import {
+  getGardenId,
+  getCareEvents,
+  createCareEvent,
+} from "@/lib/supabase/queries";
 import { CareEventType } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const plantId = searchParams.get("plantId");
+  const plantId = searchParams.get("plantId") || undefined;
 
-  let events = await getCareEvents();
+  const supabase = await createClient();
+  const gardenId = await getGardenId(supabase);
 
-  if (plantId) {
-    events = events.filter((e) => e.plantId === plantId);
-  }
-
-  // Sort newest first
-  events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const events = await getCareEvents(supabase, gardenId, plantId);
 
   return NextResponse.json(events);
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
+  const supabase = await createClient();
 
-  if (!checkPassword(body.password)) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const body = await request.json();
   const { plantId, type, notes, quantity, date } = body;
 
   if (!plantId || !type) {
@@ -47,18 +51,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const event = {
-    id: `care-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+  const gardenId = await getGardenId(supabase);
+
+  const event = await createCareEvent(supabase, gardenId, {
     plantId,
     type: type as CareEventType,
     date: date || new Date().toISOString().split("T")[0],
     notes: notes || "",
     quantity: quantity || "",
-  };
-
-  const events = await getCareEvents();
-  events.push(event);
-  await saveCareEvents(events);
+  });
 
   return NextResponse.json(event, { status: 201 });
 }

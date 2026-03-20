@@ -1,32 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getGrowth, saveGrowth } from "@/lib/blob";
-import { checkPassword } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import { getGardenId, getGrowth, createGrowth } from "@/lib/supabase/queries";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const plantId = searchParams.get("plantId");
+  const plantId = searchParams.get("plantId") || undefined;
 
-  let entries = await getGrowth();
+  const supabase = await createClient();
+  const gardenId = await getGardenId(supabase);
 
-  if (plantId) {
-    entries = entries.filter((e) => e.plantId === plantId);
-  }
-
-  entries.sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
+  const entries = await getGrowth(supabase, gardenId, plantId);
 
   return NextResponse.json(entries);
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
+  const supabase = await createClient();
 
-  if (!checkPassword(body.password)) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const body = await request.json();
 
   if (!body.plantId) {
     return NextResponse.json(
@@ -35,19 +35,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const entry = {
-    id: `growth-${Date.now()}`,
+  const gardenId = await getGardenId(supabase);
+
+  const entry = await createGrowth(supabase, gardenId, {
     plantId: body.plantId,
     date: body.date || new Date().toISOString().split("T")[0],
     heightCm: body.heightCm ?? null,
     leafCount: body.leafCount ?? null,
     healthScore: body.healthScore ?? null,
     notes: body.notes || "",
-  };
-
-  const existing = await getGrowth();
-  existing.push(entry);
-  await saveGrowth(existing);
+  });
 
   return NextResponse.json(entry, { status: 201 });
 }

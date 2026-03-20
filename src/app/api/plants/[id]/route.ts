@@ -1,29 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPlants, savePlants } from "@/lib/blob";
-import { checkPassword } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import { updatePlant, deletePlant } from "@/lib/supabase/queries";
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const body = await request.json();
+  const supabase = await createClient();
 
-  if (!checkPassword(body.password)) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const plants = await getPlants();
-  const index = plants.findIndex((p) => p.id === id);
-  if (index === -1) {
+  const body = await request.json();
+  const { password, ...updates } = body;
+
+  const plant = await updatePlant(supabase, id, updates);
+  if (!plant) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const { password, ...updates } = body;
-  plants[index] = { ...plants[index], ...updates };
-  await savePlants(plants);
-
-  return NextResponse.json(plants[index]);
+  return NextResponse.json(plant);
 }
 
 export async function DELETE(
@@ -31,18 +32,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const body = await request.json();
+  const supabase = await createClient();
 
-  if (!checkPassword(body.password)) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const plants = await getPlants();
-  const filtered = plants.filter((p) => p.id !== id);
-  if (filtered.length === plants.length) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-
-  await savePlants(filtered);
+  await deletePlant(supabase, id);
   return NextResponse.json({ ok: true });
 }

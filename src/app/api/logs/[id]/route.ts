@@ -1,14 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getLogs, saveLogs } from "@/lib/blob";
-import { checkPassword } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import {
+  getGardenId,
+  getLogs,
+  updateLog,
+  deleteLog,
+} from "@/lib/supabase/queries";
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const logs = await getLogs();
-  const log = logs.find((l) => l.id === id);
+  const supabase = await createClient();
+  const gardenId = await getGardenId(supabase);
+
+  // Fetch all logs and find the one with matching id
+  const logs = await getLogs(supabase, gardenId, {});
+  const log = logs.find((l: { id: string }) => l.id === id);
 
   if (!log) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -22,18 +31,16 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const body = await request.json();
+  const supabase = await createClient();
 
-  if (!checkPassword(body.password)) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const logs = await getLogs();
-  const index = logs.findIndex((l) => l.id === id);
-  if (index === -1) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-
+  const body = await request.json();
   const { password, ...updates } = body;
 
   // Auto-set labeled if plantId and caption are now present
@@ -41,10 +48,12 @@ export async function PUT(
     updates.labeled = true;
   }
 
-  logs[index] = { ...logs[index], ...updates };
-  await saveLogs(logs);
+  const log = await updateLog(supabase, id, updates);
+  if (!log) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
-  return NextResponse.json(logs[index]);
+  return NextResponse.json(log);
 }
 
 export async function DELETE(
@@ -52,18 +61,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const body = await request.json();
+  const supabase = await createClient();
 
-  if (!checkPassword(body.password)) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const logs = await getLogs();
-  const filtered = logs.filter((l) => l.id !== id);
-  if (filtered.length === logs.length) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-
-  await saveLogs(filtered);
+  await deleteLog(supabase, id);
   return NextResponse.json({ ok: true });
 }

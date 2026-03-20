@@ -13,7 +13,6 @@ interface PlantDetailProps {
   photos: LogEntry[];
   growthData: GrowthEntry[];
   careEvents: CareEvent[];
-  password: string;
   onBack: () => void;
   onRefresh: () => void;
 }
@@ -47,7 +46,6 @@ export function PlantDetail({
   photos,
   growthData,
   careEvents,
-  password,
   onBack,
   onRefresh,
 }: PlantDetailProps) {
@@ -90,7 +88,6 @@ export function PlantDetail({
           type,
           date: new Date().toISOString().split("T")[0],
           notes: "",
-          password,
         }),
       });
       onRefresh();
@@ -111,7 +108,6 @@ export function PlantDetail({
           healthScore: growthForm.healthScore || null,
           notes: growthForm.notes,
           date: new Date().toISOString().split("T")[0],
-          password,
         }),
       });
       setGrowthForm({ heightCm: "", leafCount: "", healthScore: 0, notes: "" });
@@ -145,7 +141,6 @@ export function PlantDetail({
           plantId: plant.id,
           caption: `${plant.commonName} — ${new Date().toLocaleDateString("en-GB")}`,
           status: latestStatus,
-          password,
         }),
       });
       onRefresh();

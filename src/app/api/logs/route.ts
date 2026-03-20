@@ -1,63 +1,66 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getLogs, saveLogs } from "@/lib/blob";
-import { checkPassword } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import {
+  getGardenId,
+  getLogs,
+  createLog,
+  createLogsBatch,
+} from "@/lib/supabase/queries";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const plantId = searchParams.get("plantId");
-  const unlabeled = searchParams.get("unlabeled");
+  const plantId = searchParams.get("plantId") || undefined;
+  const unlabeled = searchParams.get("unlabeled") === "true" || undefined;
 
-  let logs = await getLogs();
+  const supabase = await createClient();
+  const gardenId = await getGardenId(supabase);
 
-  if (plantId) {
-    logs = logs.filter((l) => l.plantId === plantId);
-  }
-
-  if (unlabeled === "true") {
-    logs = logs.filter((l) => !l.labeled || !l.plantId || !l.caption);
-  }
-
-  // Sort newest first
-  logs.sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
+  const logs = await getLogs(supabase, gardenId, { plantId, unlabeled });
 
   return NextResponse.json(logs);
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
+  const supabase = await createClient();
 
-  if (!checkPassword(body.password)) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const existing = await getLogs();
+  const body = await request.json();
+  const gardenId = await getGardenId(supabase);
 
   // Support batch upload: body.entries[] or single entry
   const entries = body.entries || [body];
-  const created = [];
 
-  for (const entry of entries) {
-    const logEntry = {
-      id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+  if (entries.length > 1) {
+    const logs = entries.map((entry: Record<string, unknown>) => ({
       plantId: entry.plantId || "",
       date: entry.date || new Date().toISOString().split("T")[0],
       cloudinaryUrl: entry.cloudinaryUrl || "",
       caption: entry.caption || "",
       status: entry.status || "sowed",
       labeled: !!(entry.plantId && entry.caption),
-    };
-    existing.push(logEntry);
-    created.push(logEntry);
+    }));
+
+    const created = await createLogsBatch(supabase, gardenId, logs);
+    return NextResponse.json(created, { status: 201 });
   }
 
-  await saveLogs(existing);
+  const entry = entries[0];
+  const log = await createLog(supabase, gardenId, {
+    plantId: entry.plantId || "",
+    date: entry.date || new Date().toISOString().split("T")[0],
+    cloudinaryUrl: entry.cloudinaryUrl || "",
+    caption: entry.caption || "",
+    status: entry.status || "sowed",
+    labeled: !!(entry.plantId && entry.caption),
+  });
 
-  return NextResponse.json(
-    created.length === 1 ? created[0] : created,
-    { status: 201 }
-  );
+  return NextResponse.json(log, { status: 201 });
 }

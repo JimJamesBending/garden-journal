@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getPlants, getCareEvents, getGrowth, getAdvice, saveAdvice } from "@/lib/blob";
+import { createClient } from "@/lib/supabase/server";
+import { getGardenId, getPlants, getCareEvents, getGrowth, getAdvice, saveAdvice } from "@/lib/supabase/queries";
 import { generateAdvice } from "@/lib/advice-engine";
 import { fetchWeather } from "@/lib/weather";
 
@@ -7,8 +8,18 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const gardenId = await getGardenId(supabase);
+
     // Check if we have fresh advice (generated today)
-    const cached = await getAdvice();
+    const cached = await getAdvice(supabase, gardenId);
     const today = new Date().toISOString().split("T")[0];
     const isFresh = cached.length > 0 && cached[0]?.generatedAt?.startsWith(today);
 
@@ -24,9 +35,9 @@ export async function GET() {
 
     // Generate fresh advice
     const [plants, careEvents, growth] = await Promise.all([
-      getPlants(),
-      getCareEvents(),
-      getGrowth(),
+      getPlants(supabase, gardenId),
+      getCareEvents(supabase, gardenId),
+      getGrowth(supabase, gardenId),
     ]);
 
     let forecast = null;
@@ -39,7 +50,7 @@ export async function GET() {
     const advice = generateAdvice(plants, careEvents, growth, forecast);
 
     // Cache the generated advice
-    await saveAdvice(advice);
+    await saveAdvice(supabase, gardenId, advice);
 
     return NextResponse.json(advice);
   } catch (error) {

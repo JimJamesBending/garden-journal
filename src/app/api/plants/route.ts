@@ -1,21 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPlants, savePlants } from "@/lib/blob";
-import { checkPassword } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import { getGardenId, getPlants, createPlant } from "@/lib/supabase/queries";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const plants = await getPlants();
+  const supabase = await createClient();
+  const gardenId = await getGardenId(supabase);
+  const plants = await getPlants(supabase, gardenId);
   return NextResponse.json(plants);
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
+  const supabase = await createClient();
 
-  if (!checkPassword(body.password)) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const body = await request.json();
   const { commonName, variety, latinName, category, sowDate, location, notes } =
     body;
 
@@ -31,23 +37,20 @@ export async function POST(request: NextRequest) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 
-  const plant = {
-    id: `plant-${Date.now()}`,
+  const gardenId = await getGardenId(supabase);
+
+  const plant = await createPlant(supabase, gardenId, {
     slug,
     commonName,
     variety: variety || "Unknown",
     latinName: latinName || "",
-    confidence: "partial" as const,
+    confidence: "partial",
     sowDate: sowDate || new Date().toISOString().split("T")[0],
     location: location || "indoor",
     category: category || "flower",
     notes: notes || "",
     seedSource: "Added via portal",
-  };
-
-  const plants = await getPlants();
-  plants.push(plant);
-  await savePlants(plants);
+  });
 
   return NextResponse.json(plant, { status: 201 });
 }

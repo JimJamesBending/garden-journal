@@ -1,33 +1,75 @@
 import { Plant, LogEntry } from "./types";
+import { createClient } from "./supabase/server";
 import {
-  getPlants as getBlobPlants,
-  getLogs as getBlobLogs,
-} from "./blob";
+  getGardenId,
+  getPlants as fetchPlants,
+  getLogs as fetchLogs,
+} from "./supabase/queries";
 
 export async function getPlants(): Promise<Plant[]> {
-  return getBlobPlants();
+  const supabase = await createClient();
+  const gardenId = await getGardenId(supabase);
+  return fetchPlants(supabase, gardenId);
 }
 
 export async function getPlantBySlug(
   slug: string
 ): Promise<Plant | undefined> {
-  const plants = await getBlobPlants();
-  return plants.find((p) => p.slug === slug);
+  const supabase = await createClient();
+  const gardenId = await getGardenId(supabase);
+
+  const { data } = await supabase
+    .from("plants")
+    .select("*")
+    .eq("garden_id", gardenId)
+    .eq("slug", slug)
+    .single();
+
+  if (!data) return undefined;
+
+  return {
+    id: data.id,
+    slug: data.slug,
+    commonName: data.common_name,
+    variety: data.variety || "Unknown",
+    latinName: data.latin_name || "",
+    confidence: data.confidence || "partial",
+    sowDate: data.sow_date,
+    location: data.location || "indoor",
+    category: data.category || "flower",
+    notes: data.notes || "",
+    seedSource: data.seed_source || "",
+  };
 }
 
 export async function getLogs(): Promise<LogEntry[]> {
-  return getBlobLogs();
+  const supabase = await createClient();
+  const gardenId = await getGardenId(supabase);
+  return fetchLogs(supabase, gardenId);
 }
 
 export async function getLogsForPlant(
   plantId: string
 ): Promise<LogEntry[]> {
-  const logs = await getBlobLogs();
-  return logs
-    .filter((l) => l.plantId === plantId)
-    .sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
+  const supabase = await createClient();
+  const gardenId = await getGardenId(supabase);
+
+  const { data } = await supabase
+    .from("log_entries")
+    .select("*")
+    .eq("garden_id", gardenId)
+    .eq("plant_id", plantId)
+    .order("date", { ascending: true });
+
+  return (data || []).map((row: Record<string, unknown>) => ({
+    id: row.id as string,
+    plantId: (row.plant_id as string) || "",
+    date: row.date as string,
+    cloudinaryUrl: (row.cloudinary_url as string) || "",
+    caption: (row.caption as string) || "",
+    status: (row.status as LogEntry["status"]) || "sowed",
+    labeled: (row.labeled as boolean) || false,
+  }));
 }
 
 export async function getLatestLog(

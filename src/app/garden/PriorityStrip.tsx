@@ -9,7 +9,6 @@ interface PriorityStripProps {
   advice: AdviceEntry[];
   plants: Plant[];
   logs: LogEntry[];
-  password: string;
   onRefresh: () => void;
 }
 
@@ -25,7 +24,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   "fun-fact": "\u{1F4A1}",
 };
 
-export function PriorityStrip({ advice, plants, logs, password, onRefresh }: PriorityStripProps) {
+export function PriorityStrip({ advice, plants, logs, onRefresh }: PriorityStripProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [logging, setLogging] = useState<string | null>(null);
 
@@ -56,7 +55,6 @@ export function PriorityStrip({ advice, plants, logs, password, onRefresh }: Pri
           type,
           date: new Date().toISOString().split("T")[0],
           notes: "",
-          password,
         }),
       });
       onRefresh();
