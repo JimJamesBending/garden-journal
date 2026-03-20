@@ -11,9 +11,10 @@ interface QuickActionsProps {
   password: string;
   onRefresh: () => void;
   onShowPhotos: () => void;
+  onShowWizard?: () => void;
 }
 
-export function QuickActions({ plants, logs, password, onRefresh, onShowPhotos }: QuickActionsProps) {
+export function QuickActions({ plants, logs, password, onRefresh, onShowPhotos, onShowWizard }: QuickActionsProps) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"menu" | "water" | "feed" | null>(null);
   const [logging, setLogging] = useState(false);
@@ -159,7 +160,7 @@ export function QuickActions({ plants, logs, password, onRefresh, onShowPhotos }
                   onClick={() => {
                     if (action.id === "water") setMode("water");
                     else if (action.id === "feed") setMode("feed");
-                    else if (action.id === "photo") fileInputRef.current?.click();
+                    else if (action.id === "photo") { if (onShowWizard) { onShowWizard(); setOpen(false); } else { fileInputRef.current?.click(); } }
                     else if (action.id === "gallery") { onShowPhotos(); setOpen(false); }
                   }}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-full border ${action.color} backdrop-blur-sm shadow-lg active:scale-95 transition-transform`}

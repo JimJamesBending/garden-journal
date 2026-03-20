@@ -192,3 +192,24 @@ export function cardBackground(url: string): string {
     quality: 40,
   });
 }
+
+/** Rotate image by degrees (90, 180, 270) via URL transform */
+export function rotateImage(url: string, degrees: 90 | 180 | 270): string {
+  if (!url || !url.includes("cloudinary.com")) return url;
+  return url.replace(/\/upload\//, `/upload/a_${degrees}/`);
+}
+
+/** Crop image via Cloudinary URL params */
+export function cropImage(
+  url: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number
+): string {
+  if (!url || !url.includes("cloudinary.com")) return url;
+  return url.replace(
+    /\/upload\//,
+    `/upload/c_crop,w_${width},h_${height},x_${x},y_${y}/`
+  );
+}

@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { AnimatePresence } from "framer-motion";
-import { Plant, LogEntry, GrowthEntry, CareEvent, AdviceEntry, WeatherSnapshot } from "@/lib/types";
+import { Plant, LogEntry, GrowthEntry, CareEvent, AdviceEntry, WeatherSnapshot, Space } from "@/lib/types";
 import { WeatherStrip } from "./WeatherStrip";
 import { PriorityStrip } from "./PriorityStrip";
 import { PlantGrid } from "./PlantGrid";
@@ -11,6 +11,7 @@ import { QuickStats } from "./QuickStats";
 import { QuickActions } from "./QuickActions";
 import { PlantDetail } from "./PlantDetail";
 import { PhotoJournal } from "./PhotoJournal";
+import { PhotoWizard } from "./PhotoWizard";
 
 interface DashboardData {
   plants: Plant[];
@@ -37,6 +38,7 @@ export default function GardenPortal() {
   const [loading, setLoading] = useState(false);
   const [selectedPlantId, setSelectedPlantId] = useState<string | null>(null);
   const [showPhotoJournal, setShowPhotoJournal] = useState(false);
+  const [showPhotoWizard, setShowPhotoWizard] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -123,6 +125,20 @@ export default function GardenPortal() {
           </p>
         </div>
       </div>
+    );
+  }
+
+  // --- Photo Wizard view ---
+  if (showPhotoWizard) {
+    return (
+      <PhotoWizard
+        plants={data.plants}
+        logs={data.logs}
+        spaces={[] as Space[]}
+        password={password}
+        onBack={() => setShowPhotoWizard(false)}
+        onRefresh={refreshData}
+      />
     );
   }
 
@@ -248,6 +264,7 @@ export default function GardenPortal() {
         password={password}
         onRefresh={refreshData}
         onShowPhotos={() => setShowPhotoJournal(true)}
+        onShowWizard={() => setShowPhotoWizard(true)}
       />
     </div>
   );

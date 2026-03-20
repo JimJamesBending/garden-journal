@@ -273,3 +273,103 @@ export interface PlantIdResponse {
     organ: string;
   };
 }
+
+// --- V4 Types: Photo Wizard ---
+
+export type PhotoCategory =
+  | "plant"      // Close-up of a living plant
+  | "label"      // Seed packet, plant label, price tag
+  | "overview"   // Wide shot of garden bed / greenhouse
+  | "soil"       // Soil, compost, empty growing medium
+  | "unclear";   // Needs user help
+
+export interface WizardPhoto {
+  id: string;                              // Temp ID for wizard session
+  cloudinaryUrl: string;                   // After upload
+  thumbnailUrl: string;                    // Cloudinary thumb transform
+  uploadProgress: number;                  // 0-100
+  uploading: boolean;
+  category: PhotoCategory | null;          // Set by AI sort
+  categoryConfidence: number;              // 0-100
+  userOverrideCategory: PhotoCategory | null;  // If user corrects AI
+  ocrText: string | null;                 // For label photos
+  plantIdResult: PlantIdResult | null;     // For plant photos
+  aiNotes: string | null;                  // AI observations
+}
+
+export interface WizardQuestion {
+  id: string;
+  photoIds: string[];                      // Which photos this relates to
+  questionText: string;                    // "Which plant is this?"
+  type: "single-choice" | "multi-choice" | "text";
+  options: WizardOption[];
+  answer: string | null;                   // Selected option ID or free text
+  skipped: boolean;
+  required: boolean;
+}
+
+export interface WizardOption {
+  id: string;
+  label: string;
+  icon?: string;                           // emoji
+  sublabel?: string;                       // e.g. variety name
+  thumbnailUrl?: string;                   // For plant matching
+}
+
+export type WizardStep = "capture" | "sort" | "questions" | "working" | "review";
+
+export interface WizardAction {
+  type: "create-plant" | "create-log" | "create-care" | "create-growth" | "assign-space" | "update-plant";
+  data: Record<string, unknown>;
+  description: string;                     // Human-readable: "Created new plant: Strawberry"
+  plantName?: string;                      // For grouping in review
+}
+
+export interface WizardState {
+  step: WizardStep;
+  photos: WizardPhoto[];
+  questions: WizardQuestion[];
+  currentQuestionIndex: number;
+  answers: Record<string, string>;         // questionId → answer
+  actions: WizardAction[];                 // What the wizard will do / has done
+  processing: boolean;
+  processingMessage: string;
+  error: string | null;
+  complete: boolean;
+}
+
+// API request/response types for wizard endpoints
+export interface WizardSortRequest {
+  photoUrls: string[];
+  password: string;
+}
+
+export interface WizardSortResponse {
+  results: Array<{
+    url: string;
+    category: PhotoCategory;
+    confidence: number;
+    ocrText: string | null;
+    plantIdSuggestion: PlantIdResult | null;
+    aiNotes: string | null;
+  }>;
+}
+
+export interface WizardProcessRequest {
+  actions: WizardAction[];
+  password: string;
+}
+
+export interface WizardProcessResponse {
+  created: {
+    plants: number;
+    logs: number;
+    careEvents: number;
+    growthEntries: number;
+  };
+  createdIds: {
+    plants: string[];
+    logs: string[];
+  };
+  errors: string[];
+}
