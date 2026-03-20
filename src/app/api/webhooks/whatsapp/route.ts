@@ -25,6 +25,8 @@ export async function GET(req: NextRequest) {
 
   const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN;
 
+  console.log("Webhook verify attempt:", { mode, token, verifyToken, challenge, match: token === verifyToken });
+
   if (mode === "subscribe" && token === verifyToken) {
     console.log("Webhook verified");
     return new NextResponse(challenge, { status: 200 });
