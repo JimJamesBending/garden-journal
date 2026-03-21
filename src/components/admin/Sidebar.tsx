@@ -16,12 +16,12 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-56 bg-gray-950 text-gray-300 flex flex-col min-h-screen border-r border-gray-800">
-      <div className="px-5 py-5 border-b border-gray-800">
-        <Link href="/admin" className="text-white font-bold text-lg">
+    <aside className="w-56 bg-white text-gray-700 flex flex-col min-h-screen border-r border-gray-200">
+      <div className="px-5 py-5 border-b border-gray-200">
+        <Link href="/admin" className="text-gray-900 font-bold text-xl">
           Hazel Admin
         </Link>
-        <p className="text-xs text-gray-500 mt-0.5">Garden management</p>
+        <p className="text-sm text-gray-400 mt-0.5">Garden management</p>
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1">
@@ -35,23 +35,23 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
                 isActive
-                  ? "bg-gray-800 text-white"
-                  : "text-gray-400 hover:bg-gray-900 hover:text-gray-200"
+                  ? "bg-green-50 text-green-800"
+                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
               }`}
             >
-              <span className="text-base">{item.icon}</span>
+              <span className="text-lg">{item.icon}</span>
               {item.label}
             </Link>
           );
         })}
       </nav>
 
-      <div className="px-5 py-4 border-t border-gray-800">
+      <div className="px-5 py-4 border-t border-gray-200">
         <Link
           href="/garden"
-          className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+          className="text-sm text-gray-400 hover:text-gray-700 transition-colors"
         >
           Back to garden
         </Link>

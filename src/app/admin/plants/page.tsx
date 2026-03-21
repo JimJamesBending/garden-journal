@@ -59,7 +59,7 @@ export default function AdminPlantsPage() {
             className="w-10 h-10 rounded-lg object-cover"
           />
         ) : (
-          <div className="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center text-sm">
+          <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-sm">
             🌿
           </div>
         );
@@ -70,9 +70,9 @@ export default function AdminPlantsPage() {
       label: "Plant",
       render: (row: Plant) => (
         <div>
-          <p className="font-medium text-white">{row.commonName}</p>
+          <p className="font-medium text-gray-900">{row.commonName}</p>
           {row.latinName && (
-            <p className="text-xs text-gray-500 italic">{row.latinName}</p>
+            <p className="text-sm text-gray-500 italic">{row.latinName}</p>
           )}
         </div>
       ),
@@ -88,7 +88,7 @@ export default function AdminPlantsPage() {
           herb: "🌿",
         };
         return (
-          <span className="text-sm">
+          <span className="text-base">
             {icons[row.category] || ""} {row.category}
           </span>
         );
@@ -99,10 +99,10 @@ export default function AdminPlantsPage() {
       label: "Confidence",
       render: (row: Plant) => (
         <span
-          className={`px-2 py-0.5 rounded text-xs font-medium ${
+          className={`px-2 py-0.5 rounded text-sm font-medium ${
             row.confidence === "confirmed"
-              ? "bg-green-900 text-green-300"
-              : "bg-amber-900 text-amber-300"
+              ? "bg-green-100 text-green-700"
+              : "bg-amber-100 text-amber-700"
           }`}
         >
           {row.confidence}
@@ -113,14 +113,14 @@ export default function AdminPlantsPage() {
       key: "owner",
       label: "Owner",
       render: (row: Plant) => (
-        <span className="text-gray-400">{row.owner}</span>
+        <span className="text-gray-600">{row.owner}</span>
       ),
     },
     {
       key: "createdAt",
       label: "Added",
       render: (row: Plant) => (
-        <span className="text-gray-500 text-sm">
+        <span className="text-gray-500 text-base">
           {new Date(row.createdAt).toLocaleDateString("en-GB", {
             day: "numeric",
             month: "short",
@@ -141,8 +141,8 @@ export default function AdminPlantsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Plants</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <h1 className="text-3xl font-bold text-gray-900">Plants</h1>
+        <p className="text-base text-gray-500 mt-1">
           {plants.length} plants across all users
         </p>
       </div>
@@ -152,7 +152,7 @@ export default function AdminPlantsPage() {
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
-          className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300"
+          className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-base text-gray-900"
         >
           <option value="">All categories</option>
           <option value="flower">Flower</option>
@@ -163,7 +163,7 @@ export default function AdminPlantsPage() {
         <select
           value={confidenceFilter}
           onChange={(e) => setConfidenceFilter(e.target.value)}
-          className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300"
+          className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-base text-gray-900"
         >
           <option value="">All confidence</option>
           <option value="confirmed">Confirmed</option>

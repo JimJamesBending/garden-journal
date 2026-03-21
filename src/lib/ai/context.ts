@@ -1,4 +1,5 @@
 import { SupabaseClient } from "@supabase/supabase-js";
+import type { SpaceSubtype } from "../types";
 
 export interface GardenContext {
   plants: Array<{
@@ -20,6 +21,7 @@ export interface GardenContext {
     name: string;
     type: string;
     plantCount: number;
+    subtypesInUse: string[];
   }>;
   plantCount: number;
   userMessageCount: number;
@@ -105,11 +107,17 @@ export async function buildGardenContext(
     }));
 
   const mappedSpaces = (spaces || []).map((s) => {
-    const positions = (s.plant_positions || []) as Array<{ plantId: string }>;
+    const positions = (s.plant_positions || []) as Array<{ plantId: string; subtype?: string }>;
+    const subtypesInUse = [...new Set(
+      positions
+        .map((p) => p.subtype)
+        .filter((st): st is string => !!st)
+    )];
     return {
       name: s.name || "",
       type: s.type || "garden-bed",
       plantCount: positions.length,
+      subtypesInUse,
     };
   });
 

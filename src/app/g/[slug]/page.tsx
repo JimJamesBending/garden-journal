@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { thumbnail, heroImage } from "@/lib/cloudinary";
-import type { SpaceType } from "@/lib/types";
+import { SPACE_HIERARCHY, SUBTYPE_INFO, type SpaceType, type SpaceSubtype } from "@/lib/types";
 
 interface GardenPageProps {
   params: Promise<{ slug: string }>;
@@ -10,44 +10,12 @@ interface GardenPageProps {
 
 // --- Space display helpers ---
 
-const SPACE_ICONS: Record<string, string> = {
-  greenhouse: "\u{1F33F}",
-  "cold-frame": "\u{1F9CA}",
-  windowsill: "\u{1FA9F}",
-  "raised-bed": "\u{1F33E}",
-  polytunnel: "\u{26FA}",
-  shelf: "\u{1F4DA}",
-  "garden-bed": "\u{1F490}",
-  shed: "\u{1F6D6}",
-  patio: "\u{2600}",
-  balcony: "\u{1F3D7}",
-  allotment: "\u{1F9D1}\u{200D}\u{1F33E}",
-  "front-garden": "\u{1F3E1}",
-  "back-garden": "\u{1F3E0}",
-};
-
-const SPACE_LABELS: Record<string, string> = {
-  greenhouse: "Greenhouse",
-  "cold-frame": "Cold Frame",
-  windowsill: "Windowsill",
-  "raised-bed": "Raised Bed",
-  polytunnel: "Polytunnel",
-  shelf: "Shelf",
-  "garden-bed": "Garden Bed",
-  shed: "Shed",
-  patio: "Patio",
-  balcony: "Balcony",
-  allotment: "Allotment",
-  "front-garden": "Front Garden",
-  "back-garden": "Back Garden",
-};
-
 function spaceIcon(type: string): string {
-  return SPACE_ICONS[type] || "\u{1F331}";
+  return SPACE_HIERARCHY[type as SpaceType]?.icon || "\u{1F331}";
 }
 
 function spaceLabel(type: string): string {
-  return SPACE_LABELS[type] || type;
+  return SPACE_HIERARCHY[type as SpaceType]?.label || type;
 }
 
 // --- Category display ---
@@ -76,7 +44,7 @@ interface DbSpace {
   type: SpaceType;
   description: string | null;
   background_image_url: string | null;
-  plant_positions: Array<{ plantId: string; x: number; y: number }>;
+  plant_positions: Array<{ plantId: string; x: number; y: number; subtype?: SpaceSubtype }>;
 }
 
 interface PlantLog {
@@ -237,9 +205,14 @@ export default async function GardenPage({ params }: GardenPageProps) {
           <div className="space-y-0">
             {/* Space sections */}
             {spaces.map((space) => {
-              const spacePlants = (space.plant_positions || [])
+              const spacePositions = space.plant_positions || [];
+              const spacePlants = spacePositions
                 .map((pos) => plantMap.get(pos.plantId))
                 .filter((p): p is DbPlant => p !== undefined);
+              const subtypeByPlantId = new Map<string, SpaceSubtype | undefined>();
+              for (const pos of spacePositions) {
+                subtypeByPlantId.set(pos.plantId, pos.subtype);
+              }
 
               if (spacePlants.length === 0) return null;
 
@@ -302,6 +275,7 @@ export default async function GardenPage({ params }: GardenPageProps) {
                           key={plant.id}
                           plant={plant}
                           log={logsByPlant[plant.id]}
+                          subtype={subtypeByPlantId.get(plant.id)}
                         />
                       ))}
                     </div>
@@ -372,9 +346,11 @@ export default async function GardenPage({ params }: GardenPageProps) {
 function PlantCard({
   plant,
   log,
+  subtype,
 }: {
   plant: DbPlant;
   log?: PlantLog;
+  subtype?: SpaceSubtype;
 }) {
   const photoUrl = log?.cloudinary_url ? thumbnail(log.cloudinary_url) : null;
   const plantDate = plant.created_at
@@ -413,6 +389,11 @@ function PlantCard({
         )}
         {plantDate && (
           <p className="text-label text-garden-textMuted mt-1">{plantDate}</p>
+        )}
+        {subtype && (
+          <p className="text-label text-garden-textMuted">
+            {SUBTYPE_INFO[subtype]?.icon} {SUBTYPE_INFO[subtype]?.label}
+          </p>
         )}
       </div>
     </div>

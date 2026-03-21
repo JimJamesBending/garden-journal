@@ -201,26 +201,146 @@ export interface PlantProblem {
 
 // --- V3 Types: Spaces ---
 
+// Top-level space types (the physical space)
 export type SpaceType =
   | "greenhouse"
-  | "cold-frame"
+  | "shed"
   | "windowsill"
   | "raised-bed"
+  | "cold-frame"
   | "polytunnel"
-  | "shelf"
   | "garden-bed"
-  | "shed"
   | "patio"
   | "balcony"
   | "allotment"
   | "front-garden"
-  | "back-garden";
+  | "back-garden"
+  | "conservatory"
+  | "porch"
+  | "garage";
+
+// Subtypes — positions/features WITHIN a space
+export type SpaceSubtype =
+  | "shelf"
+  | "ledge"
+  | "bench"
+  | "hanging"
+  | "floor"
+  | "staging"
+  | "propagator"
+  | "growbag"
+  | "pot"
+  | "trough"
+  | "wall-mounted"
+  | "trellis"
+  | "border"
+  | "path-edge"
+  | "corner";
+
+// Complete space hierarchy definition
+export const SPACE_HIERARCHY: Record<SpaceType, { label: string; icon: string; subtypes: SpaceSubtype[] }> = {
+  greenhouse: {
+    label: "Greenhouse",
+    icon: "🌿",
+    subtypes: ["shelf", "bench", "staging", "floor", "hanging", "propagator", "growbag"],
+  },
+  shed: {
+    label: "Shed",
+    icon: "🛖",
+    subtypes: ["shelf", "bench", "floor", "hanging", "wall-mounted"],
+  },
+  windowsill: {
+    label: "Windowsill",
+    icon: "🪟",
+    subtypes: ["ledge", "shelf", "propagator", "pot", "trough"],
+  },
+  "raised-bed": {
+    label: "Raised Bed",
+    icon: "🌾",
+    subtypes: ["border", "path-edge", "corner", "trellis"],
+  },
+  "cold-frame": {
+    label: "Cold Frame",
+    icon: "🧊",
+    subtypes: ["shelf", "floor", "propagator"],
+  },
+  polytunnel: {
+    label: "Polytunnel",
+    icon: "⛺",
+    subtypes: ["bench", "staging", "floor", "growbag", "hanging"],
+  },
+  "garden-bed": {
+    label: "Garden Bed",
+    icon: "💐",
+    subtypes: ["border", "path-edge", "corner", "trellis"],
+  },
+  patio: {
+    label: "Patio",
+    icon: "☀️",
+    subtypes: ["pot", "trough", "hanging", "wall-mounted", "floor", "corner"],
+  },
+  balcony: {
+    label: "Balcony",
+    icon: "🏗️",
+    subtypes: ["pot", "trough", "hanging", "wall-mounted", "shelf", "floor", "corner"],
+  },
+  allotment: {
+    label: "Allotment",
+    icon: "🧑‍🌾",
+    subtypes: ["border", "path-edge", "growbag", "trellis"],
+  },
+  "front-garden": {
+    label: "Front Garden",
+    icon: "🏡",
+    subtypes: ["border", "pot", "hanging", "wall-mounted", "path-edge", "trellis"],
+  },
+  "back-garden": {
+    label: "Back Garden",
+    icon: "🏠",
+    subtypes: ["border", "pot", "hanging", "wall-mounted", "path-edge", "trellis", "corner"],
+  },
+  conservatory: {
+    label: "Conservatory",
+    icon: "🪴",
+    subtypes: ["shelf", "ledge", "bench", "floor", "hanging", "pot"],
+  },
+  porch: {
+    label: "Porch",
+    icon: "🚪",
+    subtypes: ["shelf", "ledge", "pot", "hanging", "floor"],
+  },
+  garage: {
+    label: "Garage",
+    icon: "🅿️",
+    subtypes: ["shelf", "bench", "floor"],
+  },
+};
+
+// Subtype labels and icons
+export const SUBTYPE_INFO: Record<SpaceSubtype, { label: string; icon: string }> = {
+  shelf: { label: "Shelf", icon: "📚" },
+  ledge: { label: "Ledge", icon: "📏" },
+  bench: { label: "Bench", icon: "🪑" },
+  hanging: { label: "Hanging", icon: "🪝" },
+  floor: { label: "Floor", icon: "⬇️" },
+  staging: { label: "Staging", icon: "📐" },
+  propagator: { label: "Propagator", icon: "🌱" },
+  growbag: { label: "Growbag", icon: "🛍️" },
+  pot: { label: "Pot", icon: "🪴" },
+  trough: { label: "Trough", icon: "📦" },
+  "wall-mounted": { label: "Wall-mounted", icon: "🧱" },
+  trellis: { label: "Trellis", icon: "🪜" },
+  border: { label: "Border", icon: "🌻" },
+  "path-edge": { label: "Path Edge", icon: "🚶" },
+  corner: { label: "Corner", icon: "📐" },
+};
 
 export interface PlantPosition {
   plantId: string;
   x: number;       // % position within the space (0-100)
   y: number;       // % position within the space (0-100)
   label?: string;   // e.g. "Top shelf, left"
+  subtype?: SpaceSubtype;  // Where within the space
 }
 
 export interface Space {
@@ -413,6 +533,7 @@ export interface HazelResponse {
   identifiedPlants: IdentifiedPlant[];
   shouldSavePlants: boolean;
   detectedSpace: SpaceType | null;
+  detectedSubtype: SpaceSubtype | null;
 }
 
 export interface IdentifiedPlant {

@@ -68,13 +68,13 @@ export default function AdminAnalyticsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-white">Analytics</h1>
-        <p className="text-sm text-gray-500 mt-1">Last 30 days of data</p>
+        <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
+        <p className="text-base text-gray-500 mt-1">Last 30 days of data</p>
       </div>
 
       {/* Conversion funnel */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-        <h2 className="text-lg font-semibold text-white mb-4">
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">
           User Journey Funnel
         </h2>
         <div className="space-y-3">
@@ -107,8 +107,8 @@ export default function AdminAnalyticsPage() {
       </div>
 
       {/* Messages per day */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-        <h2 className="text-lg font-semibold text-white mb-4">
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">
           Messages per Day
         </h2>
         <div className="flex items-end gap-1 h-32">
@@ -129,7 +129,7 @@ export default function AdminAnalyticsPage() {
           {recentData.map((d) => (
             <div
               key={d.date}
-              className="flex-1 text-center text-[9px] text-gray-600"
+              className="flex-1 text-center text-xs text-gray-400"
             >
               {new Date(d.date).getDate()}
             </div>
@@ -138,8 +138,8 @@ export default function AdminAnalyticsPage() {
       </div>
 
       {/* Plants per day */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-        <h2 className="text-lg font-semibold text-white mb-4">
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">
           Plants Identified per Day
         </h2>
         <div className="flex items-end gap-1 h-32">
@@ -160,7 +160,7 @@ export default function AdminAnalyticsPage() {
           {recentData.map((d) => (
             <div
               key={d.date}
-              className="flex-1 text-center text-[9px] text-gray-600"
+              className="flex-1 text-center text-xs text-gray-400"
             >
               {new Date(d.date).getDate()}
             </div>
@@ -170,12 +170,12 @@ export default function AdminAnalyticsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top species */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-          <h2 className="text-lg font-semibold text-white mb-4">
+        <div className="bg-white border border-gray-200 rounded-xl p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Most Identified Species
           </h2>
           {data.topSpecies.length === 0 ? (
-            <p className="text-gray-500 text-sm">No data yet</p>
+            <p className="text-gray-500 text-base">No data yet</p>
           ) : (
             <div className="space-y-2">
               {data.topSpecies.map((s, i) => (
@@ -183,8 +183,8 @@ export default function AdminAnalyticsPage() {
                   key={i}
                   className="flex items-center justify-between"
                 >
-                  <span className="text-sm text-gray-300">{s.name}</span>
-                  <span className="text-sm font-medium text-white">
+                  <span className="text-base text-gray-700">{s.name}</span>
+                  <span className="text-base font-medium text-gray-900">
                     {s.count}
                   </span>
                 </div>
@@ -194,12 +194,12 @@ export default function AdminAnalyticsPage() {
         </div>
 
         {/* Category breakdown */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-          <h2 className="text-lg font-semibold text-white mb-4">
+        <div className="bg-white border border-gray-200 rounded-xl p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Category Breakdown
           </h2>
           {Object.keys(data.categoryCounts).length === 0 ? (
-            <p className="text-gray-500 text-sm">No data yet</p>
+            <p className="text-gray-500 text-base">No data yet</p>
           ) : (
             <div className="space-y-2">
               {Object.entries(data.categoryCounts)
@@ -216,10 +216,10 @@ export default function AdminAnalyticsPage() {
                       key={cat}
                       className="flex items-center justify-between"
                     >
-                      <span className="text-sm text-gray-300">
+                      <span className="text-base text-gray-700">
                         {icons[cat] || ""} {cat}
                       </span>
-                      <span className="text-sm font-medium text-white">
+                      <span className="text-base font-medium text-gray-900">
                         {count}
                       </span>
                     </div>
@@ -246,12 +246,12 @@ function FunnelBar({
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <span className="text-sm text-gray-400">{label}</span>
-        <span className="text-sm font-medium text-white">
+        <span className="text-base text-gray-500">{label}</span>
+        <span className="text-base font-medium text-gray-900">
           {value} ({Math.round(pct)}%)
         </span>
       </div>
-      <div className="h-6 bg-gray-800 rounded-lg overflow-hidden">
+      <div className="h-6 bg-gray-200 rounded-lg overflow-hidden">
         <div
           className="h-full bg-gradient-to-r from-green-600 to-green-400 rounded-lg transition-all"
           style={{ width: `${pct}%` }}

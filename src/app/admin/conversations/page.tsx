@@ -82,12 +82,12 @@ export default function AdminConversationsPage() {
             setSelectedId(null);
             setMessages([]);
           }}
-          className="text-sm text-gray-400 hover:text-white transition-colors"
+          className="text-base text-gray-500 hover:text-gray-900 transition-colors"
         >
           &larr; Back to conversations
         </button>
 
-        <h1 className="text-2xl font-bold text-white">
+        <h1 className="text-3xl font-bold text-gray-900">
           Conversation with {profileName}
         </h1>
 
@@ -100,17 +100,17 @@ export default function AdminConversationsPage() {
                 key={msg.id}
                 className={`rounded-xl px-4 py-3 max-w-lg ${
                   msg.role === "user"
-                    ? "bg-gray-800 mr-auto"
-                    : "bg-green-900/30 border border-green-800/50 ml-auto"
+                    ? "bg-gray-100 mr-auto"
+                    : "bg-green-50 border border-green-200 ml-auto"
                 }`}
               >
-                <p className="text-xs text-gray-500 mb-1">
+                <p className="text-sm text-gray-500 mb-1">
                   {msg.role === "user" ? profileName : "Hazel"}{" "}
-                  <span className="text-gray-600">
+                  <span className="text-gray-400">
                     {new Date(msg.created_at).toLocaleTimeString()}
                   </span>
                 </p>
-                <p className="text-sm text-gray-200 whitespace-pre-wrap">
+                <p className="text-base text-gray-800 whitespace-pre-wrap">
                   {msg.content}
                 </p>
                 {msg.media_urls && msg.media_urls.length > 0 && (
@@ -144,8 +144,8 @@ export default function AdminConversationsPage() {
       label: "User",
       render: (row: Conversation) => (
         <div>
-          <p className="font-medium text-white">{row.userName}</p>
-          <p className="text-xs text-gray-500 font-mono">{row.userPhone}</p>
+          <p className="font-medium text-gray-900">{row.userName}</p>
+          <p className="text-sm text-gray-500 font-mono">{row.userPhone}</p>
         </div>
       ),
     },
@@ -153,7 +153,7 @@ export default function AdminConversationsPage() {
       key: "channel",
       label: "Channel",
       render: (row: Conversation) => (
-        <span className="px-2 py-0.5 rounded text-xs bg-gray-800 text-gray-400">
+        <span className="px-2 py-0.5 rounded text-sm bg-gray-100 text-gray-600">
           {row.channel}
         </span>
       ),
@@ -162,14 +162,14 @@ export default function AdminConversationsPage() {
       key: "messageCount",
       label: "Messages",
       render: (row: Conversation) => (
-        <span className="text-white font-medium">{row.messageCount}</span>
+        <span className="text-gray-900 font-medium">{row.messageCount}</span>
       ),
     },
     {
       key: "lastMessageAt",
       label: "Last Message",
       render: (row: Conversation) => (
-        <span className="text-gray-400 text-sm">
+        <span className="text-gray-600 text-base">
           {row.lastMessageAt
             ? new Date(row.lastMessageAt).toLocaleDateString("en-GB", {
                 day: "numeric",
@@ -186,8 +186,8 @@ export default function AdminConversationsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Conversations</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <h1 className="text-3xl font-bold text-gray-900">Conversations</h1>
+        <p className="text-base text-gray-500 mt-1">
           {conversations.length} conversations, auto-refreshes
         </p>
       </div>

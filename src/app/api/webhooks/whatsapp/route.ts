@@ -23,7 +23,8 @@ import type { PendingImage } from "@/lib/channels/image-batcher";
 import { askHazel } from "@/lib/ai/hazel";
 import { buildGardenContext } from "@/lib/ai/context";
 import { createPlant, createLog, getSpaces, createSpace, updateSpace } from "@/lib/supabase/queries";
-import type { WhatsAppWebhookBody, SpaceType } from "@/lib/types";
+import type { WhatsAppWebhookBody, SpaceType, SpaceSubtype } from "@/lib/types";
+import { SPACE_HIERARCHY, SUBTYPE_INFO } from "@/lib/types";
 import { debugLog } from "@/lib/debug-log";
 
 /** Base URL for plant cards and garden journal links */
@@ -356,7 +357,8 @@ async function processBatchedImages(
     if (hazelResponse.detectedSpace && savedPlantIds.length > 0) {
       try {
         await assignPlantsToSpace(
-          supabase, gardenId, hazelResponse.detectedSpace, savedPlantIds
+          supabase, gardenId, hazelResponse.detectedSpace, savedPlantIds,
+          hazelResponse.detectedSubtype
         );
       } catch (spaceErr) {
         console.error("[HAZEL] Space assignment failed (non-fatal):", spaceErr);
@@ -607,23 +609,11 @@ async function assignPlantsToSpace(
   supabase: SupabaseClient,
   gardenId: string,
   spaceType: SpaceType,
-  plantIds: string[]
+  plantIds: string[],
+  subtype?: SpaceSubtype | null
 ): Promise<void> {
-  const spaceNames: Record<string, string> = {
-    greenhouse: "Greenhouse",
-    shed: "The Shed",
-    windowsill: "Windowsill",
-    "raised-bed": "Raised Bed",
-    patio: "Patio",
-    balcony: "Balcony",
-    polytunnel: "Polytunnel",
-    allotment: "Allotment",
-    "front-garden": "Front Garden",
-    "back-garden": "Back Garden",
-    shelf: "Shelf",
-    "cold-frame": "Cold Frame",
-    "garden-bed": "Garden Bed",
-  };
+  const spaceInfo = SPACE_HIERARCHY[spaceType];
+  const spaceName = spaceInfo?.label || spaceType;
 
   // Check if a space of this type already exists
   const existingSpaces = await getSpaces(supabase, gardenId);
@@ -632,7 +622,7 @@ async function assignPlantsToSpace(
   if (!space) {
     // Create a new space
     space = await createSpace(supabase, gardenId, {
-      name: spaceNames[spaceType] || spaceType,
+      name: spaceName,
       type: spaceType,
       description: "",
     });
@@ -652,6 +642,8 @@ async function assignPlantsToSpace(
         plantId,
         x: 20 + (idx % 4) * 20,
         y: 20 + Math.floor(idx / 4) * 20,
+        subtype: subtype || undefined,
+        label: subtype ? SUBTYPE_INFO[subtype]?.label : undefined,
       });
     }
   }
@@ -660,7 +652,7 @@ async function assignPlantsToSpace(
     await updateSpace(supabase, space.id, {
       plantPositions: newPositions,
     });
-    console.log("[HAZEL] Assigned %d plant(s) to space: %s",
-      newPositions.length - existingPositions.length, space.name);
+    console.log("[HAZEL] Assigned %d plant(s) to space: %s (subtype: %s)",
+      newPositions.length - existingPositions.length, space.name, subtype || "none");
   }
 }

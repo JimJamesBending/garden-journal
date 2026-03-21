@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import type { HazelResponse, IdentifiedPlant, SpaceType } from "../types";
+import type { HazelResponse, IdentifiedPlant, SpaceType, SpaceSubtype } from "../types";
 import type { GardenContext } from "./context";
 
 interface ImageData {
@@ -133,9 +133,17 @@ Make it relevant to what they just sent. NOT a generic question.
 Check the conversation history. Do NOT repeat phrases, greetings, or observations you've already used. If you said "spring is on its way" earlier, don't say it again. Stay fresh. Vary your language every message.
 
 ## Spaces
-When you see plants in a photo, note WHERE they are if the setting is clearly visible:
-- greenhouse, shed, windowsill, raised-bed, patio, balcony, polytunnel, allotment, front-garden, back-garden, shelf, cold-frame, garden-bed
-If you can clearly see the environment (inside a greenhouse, on a windowsill, in a shed, etc.), set detectedSpace to the matching type. If not clear or just a close-up of a plant with no visible surroundings, set detectedSpace to null. Don't guess — only set it when the setting is obvious.
+When you see plants in a photo, note WHERE they are if the setting is clearly visible.
+
+**Space types** (the physical area):
+greenhouse, shed, windowsill, raised-bed, cold-frame, polytunnel, garden-bed, patio, balcony, allotment, front-garden, back-garden, conservatory, porch, garage
+
+**Subtypes** (position WITHIN the space):
+shelf, ledge, bench, hanging, floor, staging, propagator, growbag, pot, trough, wall-mounted, trellis, border, path-edge, corner
+
+If you can clearly see the environment (inside a greenhouse, on a windowsill, etc.), set detectedSpace to the type.
+If you can also tell WHERE within that space (on a shelf, on the floor, hanging, in a growbag, etc.), set detectedSubtype.
+If not clear or just a close-up, set both to null. Don't guess.
 
 ## Response Format
 Respond with valid JSON only. No markdown, no code blocks:
@@ -152,11 +160,13 @@ Respond with valid JSON only. No markdown, no code blocks:
     }
   ],
   "shouldSavePlants": true,
-  "detectedSpace": "greenhouse"
+  "detectedSpace": "greenhouse",
+  "detectedSubtype": "shelf"
 }
 
 If no plants identified, set identifiedPlants to [] and shouldSavePlants to false.
 Set detectedSpace to null if you can't clearly see the environment.
+Set detectedSubtype to null if you can't tell the position within the space.
 Only set shouldSavePlants to true for NEW plants not already in the garden.`;
 
 /**
@@ -187,7 +197,10 @@ export async function askHazel(input: HazelInput): Promise<HazelResponse> {
     }
     if (gardenContext.spaces.length > 0) {
       contextParts.push(
-        `Garden spaces: ${gardenContext.spaces.map((s) => `${s.name} (${s.type}, ${s.plantCount} plants)`).join(", ")}.`
+        `Garden spaces: ${gardenContext.spaces.map((s) => {
+          const subtypeStr = s.subtypesInUse.length > 0 ? `, using: ${s.subtypesInUse.join(", ")}` : "";
+          return `${s.name} (${s.type}, ${s.plantCount} plants${subtypeStr})`;
+        }).join(", ")}.`
       );
     }
     if (gardenContext.recentLogs.length > 0) {
@@ -287,6 +300,7 @@ export async function askHazel(input: HazelInput): Promise<HazelResponse> {
       identifiedPlants: [],
       shouldSavePlants: false,
       detectedSpace: null,
+      detectedSubtype: null,
     };
   }
 
@@ -302,6 +316,7 @@ export async function askHazel(input: HazelInput): Promise<HazelResponse> {
       identifiedPlants: IdentifiedPlant[];
       shouldSavePlants: boolean;
       detectedSpace?: SpaceType | null;
+      detectedSubtype?: SpaceSubtype | null;
     };
 
     return {
@@ -309,6 +324,7 @@ export async function askHazel(input: HazelInput): Promise<HazelResponse> {
       identifiedPlants: parsed.identifiedPlants || [],
       shouldSavePlants: parsed.shouldSavePlants || false,
       detectedSpace: parsed.detectedSpace || null,
+      detectedSubtype: parsed.detectedSubtype || null,
     };
   } catch {
     // If JSON parsing fails, use the raw text as the response
@@ -317,6 +333,7 @@ export async function askHazel(input: HazelInput): Promise<HazelResponse> {
       identifiedPlants: [],
       shouldSavePlants: false,
       detectedSpace: null,
+      detectedSubtype: null,
     };
   }
 }

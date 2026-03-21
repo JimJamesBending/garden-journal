@@ -50,8 +50,8 @@ export default function AdminUsersPage() {
       label: "Name",
       render: (row: User) => (
         <div>
-          <p className="font-medium text-white">{row.name || "Unnamed"}</p>
-          <p className="text-xs text-gray-500">{row.email}</p>
+          <p className="font-medium text-gray-900">{row.name || "Unnamed"}</p>
+          <p className="text-sm text-gray-500">{row.email}</p>
         </div>
       ),
     },
@@ -59,7 +59,7 @@ export default function AdminUsersPage() {
       key: "phone",
       label: "Phone",
       render: (row: User) => (
-        <span className="text-gray-400 text-sm font-mono">
+        <span className="text-gray-600 text-base font-mono">
           {row.phone || "-"}
         </span>
       ),
@@ -68,7 +68,7 @@ export default function AdminUsersPage() {
       key: "plantCount",
       label: "Plants",
       render: (row: User) => (
-        <span className="text-white font-medium">{row.plantCount}</span>
+        <span className="text-gray-900 font-medium">{row.plantCount}</span>
       ),
     },
     {
@@ -76,12 +76,12 @@ export default function AdminUsersPage() {
       label: "Plan",
       render: (row: User) => (
         <span
-          className={`px-2 py-0.5 rounded text-xs font-medium ${
+          className={`px-2 py-0.5 rounded text-sm font-medium ${
             row.plan === "pro"
-              ? "bg-purple-900 text-purple-300"
+              ? "bg-purple-100 text-purple-700"
               : row.plan === "grower"
-                ? "bg-green-900 text-green-300"
-                : "bg-gray-800 text-gray-400"
+                ? "bg-green-100 text-green-700"
+                : "bg-gray-100 text-gray-600"
           }`}
         >
           {row.plan}
@@ -92,7 +92,7 @@ export default function AdminUsersPage() {
       key: "journalRevealed",
       label: "Journal",
       render: (row: User) => (
-        <span className={row.journalRevealed ? "text-green-400" : "text-gray-600"}>
+        <span className={row.journalRevealed ? "text-green-600" : "text-gray-400"}>
           {row.journalRevealed ? "Yes" : "No"}
         </span>
       ),
@@ -101,7 +101,7 @@ export default function AdminUsersPage() {
       key: "lastMessage",
       label: "Last Active",
       render: (row: User) => (
-        <span className="text-gray-400 text-sm">
+        <span className="text-gray-600 text-base">
           {row.lastMessage
             ? new Date(row.lastMessage).toLocaleDateString("en-GB", {
                 day: "numeric",
@@ -117,7 +117,7 @@ export default function AdminUsersPage() {
       key: "createdAt",
       label: "Joined",
       render: (row: User) => (
-        <span className="text-gray-500 text-sm">
+        <span className="text-gray-500 text-base">
           {new Date(row.createdAt).toLocaleDateString("en-GB", {
             day: "numeric",
             month: "short",
@@ -131,8 +131,8 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Users</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <h1 className="text-3xl font-bold text-gray-900">Users</h1>
+        <p className="text-base text-gray-500 mt-1">
           {users.length} total users
         </p>
       </div>

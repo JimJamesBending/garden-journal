@@ -59,8 +59,8 @@ export default function AdminOverview() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Overview</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <h1 className="text-3xl font-bold text-gray-900">Overview</h1>
+        <p className="text-base text-gray-500 mt-1">
           Live stats, auto-refreshes every 10s
         </p>
       </div>
@@ -93,7 +93,7 @@ export default function AdminOverview() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* System Health */}
         <div>
-          <h2 className="text-lg font-semibold text-white mb-3">
+          <h2 className="text-xl font-semibold text-gray-900 mb-3">
             System Health
           </h2>
           <div className="space-y-2">
@@ -107,14 +107,14 @@ export default function AdminOverview() {
                 />
               ))
             ) : (
-              <p className="text-gray-500 text-sm">No health data</p>
+              <p className="text-gray-500 text-base">No health data</p>
             )}
           </div>
         </div>
 
         {/* Activity Feed */}
         <div>
-          <h2 className="text-lg font-semibold text-white mb-3">
+          <h2 className="text-xl font-semibold text-gray-900 mb-3">
             Activity Feed
           </h2>
           <ActivityFeed />

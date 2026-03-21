@@ -2,7 +2,7 @@
 
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { useRef, useState } from "react";
-import { Space, Plant, LogEntry } from "@/lib/types";
+import { Space, Plant, LogEntry, SPACE_HIERARCHY, type SpaceType } from "@/lib/types";
 import { thumbnail, heroImage, cardBackground } from "@/lib/cloudinary";
 import { Tooltip } from "@/components/Tooltip";
 
@@ -13,41 +13,11 @@ interface SpacesMapProps {
 }
 
 function getSpaceIcon(type: string): string {
-  const icons: Record<string, string> = {
-    greenhouse: "\u{1F33F}",
-    "cold-frame": "\u{1F9CA}",
-    windowsill: "\u{1FA9F}",
-    "raised-bed": "\u{1F33E}",
-    polytunnel: "\u{26FA}",
-    shelf: "\u{1F4DA}",
-    "garden-bed": "\u{1F490}",
-    shed: "\u{1F6D6}",
-    patio: "\u{2600}",
-    balcony: "\u{1F3D7}",
-    allotment: "\u{1F9D1}\u{200D}\u{1F33E}",
-    "front-garden": "\u{1F3E1}",
-    "back-garden": "\u{1F3E0}",
-  };
-  return icons[type] || "\u{1F331}";
+  return SPACE_HIERARCHY[type as SpaceType]?.icon || "\u{1F331}";
 }
 
 function getSpaceLabel(type: string): string {
-  const labels: Record<string, string> = {
-    greenhouse: "Greenhouse",
-    "cold-frame": "Cold Frame",
-    windowsill: "Windowsill",
-    "raised-bed": "Raised Bed",
-    polytunnel: "Polytunnel",
-    shelf: "Shelf",
-    "garden-bed": "Garden Bed",
-    shed: "Shed",
-    patio: "Patio",
-    balcony: "Balcony",
-    allotment: "Allotment",
-    "front-garden": "Front Garden",
-    "back-garden": "Back Garden",
-  };
-  return labels[type] || type;
+  return SPACE_HIERARCHY[type as SpaceType]?.label || type;
 }
 
 export function SpacesMap({ spaces, plants, logs }: SpacesMapProps) {

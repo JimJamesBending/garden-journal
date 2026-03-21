@@ -8,17 +8,17 @@ interface StatCardProps {
 export function StatCard({ label, value, detail, trend }: StatCardProps) {
   const trendColor =
     trend === "up"
-      ? "text-green-400"
+      ? "text-green-600"
       : trend === "down"
-        ? "text-red-400"
+        ? "text-red-600"
         : "text-gray-500";
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-      <p className="text-sm text-gray-400 mb-1">{label}</p>
-      <p className="text-2xl font-bold text-white">{value}</p>
+    <div className="bg-white border border-gray-200 rounded-xl p-5">
+      <p className="text-base text-gray-500 mb-1">{label}</p>
+      <p className="text-3xl font-bold text-gray-900">{value}</p>
       {detail && (
-        <p className={`text-xs mt-1 ${trendColor}`}>{detail}</p>
+        <p className={`text-sm mt-1 ${trendColor}`}>{detail}</p>
       )}
     </div>
   );
