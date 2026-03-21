@@ -119,6 +119,8 @@ async function processMessage(
 
   if (message.type === "image") {
     await sendTextMessage(phone, pickRandom(IMAGE_ACKS));
+    // Re-fire typing indicator — sending the ack message cancels the previous one
+    await markReadAndType(message.id);
   }
 
   try {
@@ -145,6 +147,8 @@ async function processMessage(
       const isShortMessage = textContent.trim().split(/\s+/).length <= 3;
       if (!isNew && !isShortMessage) {
         await sendTextMessage(phone, pickRandom(TEXT_ACKS));
+        // Re-fire typing — sending the ack cancels the previous indicator
+        await markReadAndType(message.id);
       }
 
     } else if (message.type === "image" && message.image) {
