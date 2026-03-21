@@ -106,8 +106,16 @@ async function processMessage(
 ): Promise<void> {
   const supabase = createAdminClient();
 
-  // Send read receipt immediately
+  // Send read receipt + acknowledgement IMMEDIATELY — before any DB work
   await markRead(message.id);
+
+  if (message.type === "image") {
+    await sendTextMessage(phone, pickRandom(IMAGE_ACKS));
+    await showTyping(phone);
+  } else if (message.type === "text") {
+    // For text, we don't know if they're new yet — send typing first, ack after resolve
+    await showTyping(phone);
+  }
 
   try {
     // 1. Resolve user (find or create)
@@ -133,19 +141,13 @@ async function processMessage(
     if (message.type === "text" && message.text) {
       textContent = message.text.body;
 
-      // Send split message for text — but NOT for brand new users (they get a fast welcome)
+      // Send split ack for returning users (new users get a fast welcome instead)
       if (!isNew) {
         await sendTextMessage(phone, pickRandom(TEXT_ACKS));
-        await showTyping(phone);
-      } else {
         await showTyping(phone);
       }
     } else if (message.type === "image" && message.image) {
       textContent = message.image.caption || "Sent a photo";
-
-      // Always send split message for images — they take longer to process
-      await sendTextMessage(phone, pickRandom(IMAGE_ACKS));
-      await showTyping(phone);
 
       try {
         const { buffer, mimeType } = await downloadMedia(message.image.id);
