@@ -6,7 +6,8 @@ import { saveMessage } from "@/lib/channels/save-message";
 import {
   sendTextMessage,
   sendImageMessage,
-  markTyping,
+  markRead,
+  showTyping,
   downloadMedia,
   uploadToCloudinary,
 } from "@/lib/channels/whatsapp";
@@ -85,8 +86,9 @@ async function processMessage(
 ): Promise<void> {
   const supabase = createAdminClient();
 
-  // Send read receipt immediately so user sees blue ticks
-  await markTyping(phone, message.id);
+  // Send read receipt + typing indicator immediately
+  await markRead(message.id);
+  await showTyping(phone);
 
   try {
     // 1. Resolve user (find or create)

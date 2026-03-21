@@ -20,9 +20,9 @@ function getPhoneNumberId(): string {
 }
 
 /**
- * Mark a conversation as "typing" so the user sees a composing indicator.
+ * Send read receipt (blue ticks) for a message.
  */
-export async function markTyping(to: string, messageId: string): Promise<void> {
+export async function markRead(messageId: string): Promise<void> {
   const token = getAccessToken();
   const phoneNumberId = getPhoneNumberId();
 
@@ -37,9 +37,31 @@ export async function markTyping(to: string, messageId: string): Promise<void> {
       status: "read",
       message_id: messageId,
     }),
-  }).catch(() => {
-    // Non-critical — don't throw if read receipt fails
-  });
+  }).catch(() => {});
+}
+
+/**
+ * Show "typing..." indicator to the user. Lasts up to 25 seconds
+ * or until a message is sent.
+ */
+export async function showTyping(to: string): Promise<void> {
+  const token = getAccessToken();
+  const phoneNumberId = getPhoneNumberId();
+
+  await fetch(`${GRAPH_API}/${phoneNumberId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to,
+      type: "typing",
+      typing: { action: "typing" },
+    }),
+  }).catch(() => {});
 }
 
 /**
