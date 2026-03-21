@@ -87,8 +87,8 @@ const IMAGE_ACKS = [
 const TEXT_ACKS = [
   "Hmmm...",
   "Let me think...",
-  "Hmm good question...",
   "One moment...",
+  "Hmm hang on...",
 ];
 
 function pickRandom(arr: string[]): string {
@@ -142,8 +142,10 @@ async function processMessage(
     if (message.type === "text" && message.text) {
       textContent = message.text.body;
 
-      // Send split ack for returning users (new users get a fast welcome instead)
-      if (!isNew) {
+      // Send split ack for returning users with longer messages
+      // Skip for short greetings — they deserve a fast reply
+      const isShortMessage = textContent.trim().split(/\s+/).length <= 3;
+      if (!isNew && !isShortMessage) {
         await sendTextMessage(phone, pickRandom(TEXT_ACKS));
         await showTyping(phone);
       }
