@@ -428,7 +428,7 @@ async function savePlants(
   cloudinaryUrls: string[]
 ): Promise<string[]> {
   const savedPlantIds: string[] = [];
-  const plantsToSave = hazelResponse.identifiedPlants.slice(0, 3);
+  const plantsToSave = hazelResponse.identifiedPlants.slice(0, 20);
   console.log("[HAZEL] Step 5: Saving plants (shouldSave=%s, candidates=%d)", hazelResponse.shouldSavePlants, plantsToSave.length);
 
   if (!hazelResponse.shouldSavePlants || plantsToSave.length === 0) {

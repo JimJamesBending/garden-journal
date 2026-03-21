@@ -91,11 +91,12 @@ export async function GET(
     .limit(1)
     .single();
 
-  // Crop tighter on the plant — fill card, focus on subject
+  // Use the photo as-is — don't try to auto-crop because wide garden
+  // shots get cropped to fence/background. Just resize to fit the card.
   const photoUrl = log?.cloudinary_url
     ? log.cloudinary_url.replace(
         /\/upload\//,
-        "/upload/w_800,h_500,c_fill,g_auto:subject,q_auto/"
+        "/upload/w_800,h_500,c_fill,g_center,q_auto/"
       )
     : null;
 
