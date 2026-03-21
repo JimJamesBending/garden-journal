@@ -203,17 +203,22 @@ async function processMessage(
       throw stepErr;
     }
 
-    // 6. Save identified plants and collect IDs for card generation
+    // 6. Save identified plants — only high-confidence IDs (85%+)
     const savedPlantIds: string[] = [];
     if (hazelResponse.shouldSavePlants && hazelResponse.identifiedPlants.length > 0) {
       for (const plant of hazelResponse.identifiedPlants) {
+        // Skip low-confidence guesses — don't pollute the garden with wrong IDs
+        if (plant.confidence < 85) {
+          console.log("[HAZEL] Skipping low-confidence plant:", plant.commonName, plant.confidence);
+          continue;
+        }
         try {
           const createdPlant = await createPlant(supabase, gardenId, {
             commonName: plant.commonName,
             latinName: plant.latinName,
             category: plant.category,
             variety: plant.variety || "Unknown variety",
-            confidence: plant.confidence >= 70 ? "confirmed" : "partial",
+            confidence: plant.confidence >= 90 ? "confirmed" : "partial",
             sowDate: new Date().toISOString().split("T")[0],
             location: "outdoor",
             notes: plant.aiNotes,
