@@ -81,6 +81,7 @@ const IMAGE_ACKS = [
   "Let me see...",
   "Hmm let me take a closer look...",
   "Oh hello, what have we here...",
+  "Hi! Let me put my glasses on...",
 ];
 
 const TEXT_ACKS = [
