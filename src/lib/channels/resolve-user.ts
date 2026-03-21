@@ -47,6 +47,9 @@ export async function resolveWhatsAppUser(
   // New user — create via admin auth
   const placeholderEmail = `wa-${phone.replace(/\+/g, "")}@hazel.garden`;
 
+  let userId: string;
+  let isNewAuthUser = false;
+
   const { data: authData, error: authError } =
     await supabase.auth.admin.createUser({
       email: placeholderEmail,
@@ -59,30 +62,44 @@ export async function resolveWhatsAppUser(
       },
     });
 
-  if (authError) throw authError;
-  const userId = authData.user.id;
-
-  // DB trigger handle_new_user() creates profile
-  // DB trigger handle_new_profile() creates garden
-  // Wait a moment for triggers to complete
-  await new Promise((resolve) => setTimeout(resolve, 500));
-
-  // Set public slug on profile
-  const slug = `g-${crypto.randomBytes(4).toString("hex")}`;
-  const { error: profileUpdateError } = await supabase
-    .from("profiles")
-    .update({
-      public_slug: slug,
-      phone,
-      name: profileName || "Gardener",
-    })
-    .eq("id", userId);
-
-  if (profileUpdateError) {
-    console.error("[HAZEL] Failed to update profile with slug/phone:", profileUpdateError);
+  if (authError) {
+    // Auth user already exists (e.g. conversation was deleted but user remains).
+    // Look them up by email and re-create the conversation.
+    console.log("[HAZEL] Auth user already exists for %s, looking up...", phone);
+    const { data: existingUsers } = await supabase.auth.admin.listUsers();
+    const existingUser = existingUsers?.users?.find(
+      (u) => u.email === placeholderEmail
+    );
+    if (!existingUser) throw authError; // genuinely unexpected — rethrow
+    userId = existingUser.id;
+  } else {
+    userId = authData.user.id;
+    isNewAuthUser = true;
   }
 
-  // Get the auto-created garden
+  if (isNewAuthUser) {
+    // DB trigger handle_new_user() creates profile
+    // DB trigger handle_new_profile() creates garden
+    // Wait a moment for triggers to complete
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    // Set public slug on profile
+    const slug = `g-${crypto.randomBytes(4).toString("hex")}`;
+    const { error: profileUpdateError } = await supabase
+      .from("profiles")
+      .update({
+        public_slug: slug,
+        phone,
+        name: profileName || "Gardener",
+      })
+      .eq("id", userId);
+
+    if (profileUpdateError) {
+      console.error("[HAZEL] Failed to update profile with slug/phone:", profileUpdateError);
+    }
+  }
+
+  // Get the garden (auto-created by trigger for new users, already exists for returning)
   const { data: garden } = await supabase
     .from("gardens")
     .select("id")
@@ -108,6 +125,6 @@ export async function resolveWhatsAppUser(
     userId,
     gardenId: garden.id,
     conversationId: conversation.id,
-    isNew: true,
+    isNew: isNewAuthUser,
   };
 }
