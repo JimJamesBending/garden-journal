@@ -241,10 +241,10 @@ git add . && git commit -m "message" && git push origin master
 - [x] Fix duplicate journal reveal (atomic `try_reveal_journal` RPC)
 - [x] Fix multi-image flooding (Postgres batch queue with advisory locks)
 - [x] Plant impact cards — ecological stats on plant cards (bees, butterflies, O₂, grade)
-- [ ] Test typing indicator with corrected API format (markReadAndType)
+- [x] Test typing indicator with corrected API format (markReadAndType) — typing only works once before first reply, ack merged into response
 - [ ] Test golden path end-to-end (fresh user -> plant 1 -> plant 2 -> journal reveal)
 - [ ] Test multi-image batching (2-5 photos rapid-fire -> single response)
-- [ ] Test plant card impact stats render correctly
+- [x] Test plant card impact stats render correctly — pills with bees/butterflies/O₂ + grade badge
 
 ### Short Term
 - [ ] Duplicate plant detection — nickname system ("greenhouse tomato" vs "back door tomato")
@@ -259,7 +259,7 @@ git add . && git commit -m "message" && git push origin master
 ### Medium Term
 - [ ] Pricing model (free launch -> seasonal pass or freemium later)
 - [ ] Garden centre partnerships / affiliate revenue
-- [ ] Image downscaling before Gemini (400px wide is plenty for plant ID)
+- [x] Image downscaling before Gemini (800px wide via sharp, full-size to Cloudinary)
 - [ ] GIF sending for richer responses (WhatsApp API supports it natively)
 - [ ] Proactive messages — seasonal tips, care reminders (requires Meta template approval)
 
