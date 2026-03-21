@@ -16,6 +16,14 @@ import { createPlant, createLog } from "@/lib/supabase/queries";
 import type { WhatsAppWebhookBody } from "@/lib/types";
 
 /**
+ * Extend the max execution time for this route.
+ * Image processing (WhatsApp download + Gemini vision + Cloudinary upload)
+ * typically takes 8-15 seconds — well beyond the 10s default.
+ * Hobby plan max: 60 seconds.
+ */
+export const maxDuration = 60;
+
+/**
  * GET /api/webhooks/whatsapp
  * Webhook verification — Meta sends a challenge to confirm the endpoint.
  */
@@ -126,10 +134,12 @@ async function processMessage(
       textContent = message.text.body;
 
       // Resolve user
+      console.log("[HAZEL] Step 1: Resolving user (text)...");
       const resolved = await resolveWhatsAppUser(supabase, phone, profileName);
       gardenId = resolved.gardenId;
       conversationId = resolved.conversationId;
       isNew = resolved.isNew;
+      console.log("[HAZEL] Step 1 done: user resolved, isNew =", isNew);
 
       // Send split ack for returning users with longer messages
       const isShortMessage = textContent.trim().split(/\s+/).length <= 3;
@@ -141,6 +151,7 @@ async function processMessage(
       textContent = message.image.caption || "Sent a photo";
 
       // Download image + resolve user IN PARALLEL
+      console.log("[HAZEL] Step 1: Downloading media + resolving user (parallel)...");
       const [mediaResult, resolved] = await Promise.all([
         downloadMedia(message.image.id),
         resolveWhatsAppUser(supabase, phone, profileName),
@@ -148,6 +159,7 @@ async function processMessage(
       gardenId = resolved.gardenId;
       conversationId = resolved.conversationId;
       isNew = resolved.isNew;
+      console.log("[HAZEL] Step 1 done: media downloaded (%d bytes, %s), user resolved", mediaResult.buffer.length, mediaResult.mimeType);
 
       // Keep raw buffer for Gemini
       rawImageData.push({
@@ -167,13 +179,15 @@ async function processMessage(
     }
 
     // Build context + save user message IN PARALLEL
+    console.log("[HAZEL] Step 2: Building context + saving user message (parallel)...");
     const [context] = await Promise.all([
       buildGardenContext(supabase, gardenId, conversationId),
       saveMessage(supabase, conversationId, "user", textContent, imageUrls),
     ]);
+    console.log("[HAZEL] Step 2 done: context built (plants=%d, msgs=%d, isNew=%s)", context.plantCount, context.userMessageCount, context.isNewUser);
 
     // Ask Hazel (the main bottleneck — Gemini call)
-    console.log("[HAZEL] Asking Gemini...");
+    console.log("[HAZEL] Step 3: Asking Gemini... (images=%d, textLen=%d)", rawImageData.length, textContent.length);
     let hazelResponse;
     try {
       hazelResponse = await askHazel({
@@ -181,25 +195,34 @@ async function processMessage(
         imageData: rawImageData.length > 0 ? rawImageData : undefined,
         gardenContext: context,
       });
-      console.log("[HAZEL] Gemini done: length =", hazelResponse.text.length);
+      console.log("[HAZEL] Step 3 done: Gemini responded (textLen=%d, plants=%d, shouldSave=%s)",
+        hazelResponse.text.length,
+        hazelResponse.identifiedPlants.length,
+        hazelResponse.shouldSavePlants
+      );
     } catch (stepErr) {
-      console.error("[HAZEL] Gemini FAILED:", stepErr instanceof Error ? stepErr.message + "\n" + stepErr.stack : String(stepErr));
+      console.error("[HAZEL] Step 3 FAILED (Gemini):", stepErr instanceof Error ? stepErr.message + "\n" + stepErr.stack : String(stepErr));
       throw stepErr;
     }
 
-    // Resolve Cloudinary upload if it was started (should be done by now)
+    // Step 4: Resolve Cloudinary upload if it was started (should be done by now)
+    console.log("[HAZEL] Step 4: Resolving Cloudinary upload...");
     if (cloudinaryPromise) {
       try {
         const cloudinaryUrl = await cloudinaryPromise;
         imageUrls.push(cloudinaryUrl);
+        console.log("[HAZEL] Step 4 done: Cloudinary URL =", cloudinaryUrl.substring(0, 60) + "...");
       } catch (err) {
-        console.error("[HAZEL] Cloudinary upload failed:", err);
+        console.error("[HAZEL] Step 4 FAILED (Cloudinary, non-fatal):", err);
       }
+    } else {
+      console.log("[HAZEL] Step 4 skipped: no image to upload");
     }
 
-    // 6. Save identified plants — only high-confidence IDs (85%+), max 3
+    // Step 5: Save identified plants — only high-confidence IDs (85%+), max 3
     const savedPlantIds: string[] = [];
     const plantsToSave = hazelResponse.identifiedPlants.slice(0, 3);
+    console.log("[HAZEL] Step 5: Saving plants (shouldSave=%s, candidates=%d)", hazelResponse.shouldSavePlants, plantsToSave.length);
     if (hazelResponse.shouldSavePlants && plantsToSave.length > 0) {
       for (const plant of plantsToSave) {
         // Skip low-confidence guesses — don't pollute the garden with wrong IDs
@@ -219,6 +242,7 @@ async function processMessage(
             notes: plant.aiNotes,
           });
           savedPlantIds.push(createdPlant.id);
+          console.log("[HAZEL] Saved plant:", plant.commonName, "id =", createdPlant.id);
 
           if (imageUrls.length > 0) {
             await createLog(supabase, gardenId, {
@@ -229,6 +253,7 @@ async function processMessage(
               status: "sowed",
               labeled: true,
             });
+            console.log("[HAZEL] Created log entry for plant:", plant.commonName);
           }
         } catch (plantErr) {
           console.error("[HAZEL] Error saving plant:", plantErr);
@@ -236,35 +261,39 @@ async function processMessage(
       }
     }
 
-    // 7. Save Hazel's response
+    // Step 6: Save Hazel's response
     try {
       await saveMessage(supabase, conversationId, "assistant", hazelResponse.text);
-      console.log("[HAZEL] Step 7 done: response saved");
+      console.log("[HAZEL] Step 6 done: response saved");
     } catch (stepErr) {
-      console.error("[HAZEL] Step 7 FAILED (non-fatal):", String(stepErr));
+      console.error("[HAZEL] Step 6 FAILED (non-fatal):", String(stepErr));
     }
 
-    // 8. Send plant card image(s) if plants were identified
+    // Step 7: Send plant card image(s) if plants were identified
     const plantsWereSaved = savedPlantIds.length > 0;
     if (plantsWereSaved) {
+      console.log("[HAZEL] Step 7: Sending %d plant card(s)...", savedPlantIds.length);
       for (const plantId of savedPlantIds) {
         try {
           const cardUrl = `https://garden-project-theta.vercel.app/api/card/${plantId}`;
           await sendImageMessage(phone, cardUrl);
-          console.log("[HAZEL] Sent plant card for", plantId);
+          console.log("[HAZEL] Step 7: Sent plant card for", plantId);
         } catch (cardErr) {
-          console.error("[HAZEL] Failed to send plant card:", cardErr);
+          console.error("[HAZEL] Step 7 FAILED (card send, non-fatal):", cardErr);
         }
       }
+    } else {
+      console.log("[HAZEL] Step 7 skipped: no plants saved");
     }
 
-    // 9. Build and send the text reply
+    // Step 8: Build and send the text reply
     let replyText = hazelResponse.text;
 
     // Journal reveal: when the 2nd plant is saved (plantCount was < 2 before, now >= 2)
     const plantsBeforeThisMessage = context.plantCount;
     const totalPlantsNow = plantsBeforeThisMessage + savedPlantIds.length;
     const isJournalRevealMoment = plantsBeforeThisMessage < 2 && totalPlantsNow >= 2;
+    console.log("[HAZEL] Step 8: Journal reveal check — before=%d, saved=%d, total=%d, reveal=%s", plantsBeforeThisMessage, savedPlantIds.length, totalPlantsNow, isJournalRevealMoment);
 
     if (isJournalRevealMoment || plantsWereSaved) {
       const { data: profile } = await supabase
@@ -280,10 +309,11 @@ async function processMessage(
       if (isJournalRevealMoment && gardenUrl) {
         const name = profile?.name || "lovely";
         replyText += `\n\n${name}! I made this little garden journal for you, if you like!\n${gardenUrl}`;
+        console.log("[HAZEL] Step 8: Journal reveal appended for", name);
       }
     }
 
-    console.log("[HAZEL] Step 9: Sending reply, length =", replyText.length);
+    console.log("[HAZEL] Step 9: Sending reply (length=%d)...", replyText.length);
     await sendTextMessage(phone, replyText);
     console.log("[HAZEL] DONE — reply sent successfully");
   } catch (err) {

@@ -215,13 +215,19 @@ export async function askHazel(input: HazelInput): Promise<HazelResponse> {
     contentParts.push(...imageContents);
   }
 
-  // Add text prompt
+  // Add user message text (context + actual message)
   contentParts.push({
-    text: `${HAZEL_SYSTEM_PROMPT}${contextBlock}\n\nUser message: ${userMessage}`,
+    text: `${contextBlock}\n\nUser message: ${userMessage}`,
   });
 
   const result = await ai.models.generateContent({
     model: "gemini-2.5-flash",
+    config: {
+      systemInstruction: HAZEL_SYSTEM_PROMPT,
+      thinkingConfig: {
+        thinkingBudget: 0, // Disable thinking — we need speed, not reasoning chains
+      },
+    },
     contents: contentParts,
   });
 
