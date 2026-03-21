@@ -305,11 +305,19 @@ export async function askHazel(input: HazelInput): Promise<HazelResponse> {
   }
 
   try {
-    // Strip markdown code blocks if present
+    // Strip markdown code blocks — Gemini sometimes wraps JSON in ```json ... ```
+    // Handle: leading whitespace, single/triple backticks, with/without "json" label
     let jsonStr = responseText;
-    if (jsonStr.startsWith("```")) {
-      jsonStr = jsonStr.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
+    const codeBlockMatch = jsonStr.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/);
+    if (codeBlockMatch) {
+      jsonStr = codeBlockMatch[1];
+    } else if (jsonStr.startsWith("```")) {
+      // Fallback: opening ``` but no closing (truncated response)
+      jsonStr = jsonStr.replace(/^```(?:json)?\s*\n?/, "");
     }
+
+    // Trim any surrounding whitespace
+    jsonStr = jsonStr.trim();
 
     const parsed = JSON.parse(jsonStr) as {
       text: string;
@@ -327,7 +335,38 @@ export async function askHazel(input: HazelInput): Promise<HazelResponse> {
       detectedSubtype: parsed.detectedSubtype || null,
     };
   } catch {
-    // If JSON parsing fails, use the raw text as the response
+    // JSON parsing failed — try to extract just the "text" field with regex
+    // so we NEVER send raw JSON/code to the user
+    const textMatch = responseText.match(/"text"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+    if (textMatch) {
+      // Unescape JSON string escapes (\\n -> \n, \\" -> ", etc.)
+      const extracted = textMatch[1]
+        .replace(/\\n/g, "\n")
+        .replace(/\\"/g, '"')
+        .replace(/\\\\/g, "\\");
+      console.log("[HAZEL] JSON parse failed but extracted text field via regex");
+      return {
+        text: extracted,
+        identifiedPlants: [],
+        shouldSavePlants: false,
+        detectedSpace: null,
+        detectedSubtype: null,
+      };
+    }
+
+    // Last resort: if the response looks like JSON (starts with {), don't send it raw
+    if (responseText.trimStart().startsWith("{")) {
+      console.error("[HAZEL] JSON parse failed and response looks like raw JSON — suppressing");
+      return {
+        text: "Sorry, I got a bit muddled there. Could you send that again?",
+        identifiedPlants: [],
+        shouldSavePlants: false,
+        detectedSpace: null,
+        detectedSubtype: null,
+      };
+    }
+
+    // Genuinely plain text response (rare but possible)
     return {
       text: responseText,
       identifiedPlants: [],
