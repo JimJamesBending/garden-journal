@@ -5,6 +5,7 @@ import { resolveWhatsAppUser } from "@/lib/channels/resolve-user";
 import { saveMessage } from "@/lib/channels/save-message";
 import {
   sendTextMessage,
+  markTyping,
   downloadMedia,
   uploadToCloudinary,
 } from "@/lib/channels/whatsapp";
@@ -75,12 +76,16 @@ async function processMessage(
   phone: string,
   profileName: string,
   message: {
+    id: string;
     type: string;
     text?: { body: string };
     image?: { id: string; mime_type: string; caption?: string };
   }
 ): Promise<void> {
   const supabase = createAdminClient();
+
+  // Send read receipt immediately so user sees blue ticks
+  await markTyping(phone, message.id);
 
   try {
     // 1. Resolve user (find or create)

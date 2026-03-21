@@ -20,6 +20,29 @@ function getPhoneNumberId(): string {
 }
 
 /**
+ * Mark a conversation as "typing" so the user sees a composing indicator.
+ */
+export async function markTyping(to: string, messageId: string): Promise<void> {
+  const token = getAccessToken();
+  const phoneNumberId = getPhoneNumberId();
+
+  await fetch(`${GRAPH_API}/${phoneNumberId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      status: "read",
+      message_id: messageId,
+    }),
+  }).catch(() => {
+    // Non-critical — don't throw if read receipt fails
+  });
+}
+
+/**
  * Send a text message to a WhatsApp user.
  */
 export async function sendTextMessage(to: string, body: string): Promise<void> {
