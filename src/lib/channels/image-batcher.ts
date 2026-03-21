@@ -1,7 +1,7 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 
-const INITIAL_WAIT_MS = 3000; // Wait 3s for more images to arrive
-const EXTENDED_WAIT_MS = 5000; // Extra 5s if batch detected (8s total)
+const INITIAL_WAIT_MS = 1500; // Wait 1.5s for more images to arrive
+const EXTENDED_WAIT_MS = 3000; // Extra 3s if batch detected (4.5s total)
 
 export interface PendingImage {
   id: string;

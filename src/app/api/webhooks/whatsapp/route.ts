@@ -396,17 +396,11 @@ async function processBatchedImages(
     }
 
     // Step 7: Check for interrupts — did new text messages arrive during processing?
+    // Don't re-ask Gemini — plant ID is already done. The text messages will be
+    // processed by their own invocations. Just log and continue with the original response.
     const interruptContent = await checkForInterrupt(supabase, conversationId, processingStartedAt);
     if (interruptContent) {
-      console.log("[HAZEL] Interrupted during image processing! Re-asking Gemini...");
-      const freshContext = await buildGardenContext(supabase, gardenId, conversationId);
-      const freshResponse = await askHazel({
-        userMessage: interruptContent,
-        imageData: rawImageData,
-        gardenContext: freshContext,
-      });
-      hazelResponse = freshResponse;
-      console.log("[HAZEL] Re-asked Gemini (interrupt), new response length=%d", hazelResponse.text.length);
+      console.log("[HAZEL] Interrupt detected during image processing (ignored — plant ID already done)");
     }
 
     // Cancel progress timer — we're about to send the real response
@@ -534,16 +528,11 @@ async function processTextMessage(
     }
 
     // Step 4: Check for interrupts — did new messages arrive during processing?
+    // Don't re-ask Gemini — the new messages will get their own invocations.
+    // Just log and continue with the original response.
     const interruptContent = await checkForInterrupt(supabase, conversationId, processingStartedAt);
     if (interruptContent) {
-      console.log("[HAZEL] Interrupted! Re-asking Gemini with new context...");
-      const freshContext = await buildGardenContext(supabase, gardenId, conversationId);
-      const freshResponse = await askHazel({
-        userMessage: interruptContent,
-        gardenContext: freshContext,
-      });
-      hazelResponse = freshResponse;
-      console.log("[HAZEL] Re-asked Gemini (interrupt), new response length=%d", hazelResponse.text.length);
+      console.log("[HAZEL] Interrupt detected during text processing (ignored — response already generated)");
     }
 
     // Step 5: Save Hazel's response
