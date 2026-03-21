@@ -200,7 +200,7 @@ function pickRandom(arr: string[]): string {
 
 // Message types that should be silently blue-ticked with NO reply.
 // These are conversational fluff that shouldn't interrupt ongoing processing.
-const SILENT_TYPES = ["sticker", "reaction", "location", "contacts", "interactive", "order", "system"];
+const SILENT_TYPES = ["sticker", "reaction", "location", "contacts", "interactive", "order", "system", "unsupported"];
 
 async function processMessage(
   phone: string,
