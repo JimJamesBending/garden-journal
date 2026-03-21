@@ -1,9 +1,37 @@
 import { ImageResponse } from "@vercel/og";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getPlantImpact } from "@/lib/plant-impact";
-import type { ImpactStat } from "@/lib/plant-impact";
 
 export const runtime = "edge";
+
+/**
+ * Load a Google Font dynamically.
+ * Fetches the CSS from Google Fonts, extracts the font file URL,
+ * and returns the binary data as an ArrayBuffer.
+ */
+async function loadGoogleFont(
+  font: string,
+  text: string
+): Promise<ArrayBuffer> {
+  const url = `https://fonts.googleapis.com/css2?family=${font}&text=${encodeURIComponent(text)}`;
+  const css = await (
+    await fetch(url, {
+      headers: {
+        // Request TrueType format (not woff2 which Satori can't handle)
+        "User-Agent":
+          "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+      },
+    })
+  ).text();
+
+  const match = css.match(/src: url\((.+?)\) format\('(opentype|truetype)'\)/);
+  if (!match || !match[1]) {
+    throw new Error(`Failed to extract font URL for: ${font}`);
+  }
+
+  const fontRes = await fetch(match[1]);
+  if (!fontRes.ok) throw new Error(`Failed to download font: ${fontRes.status}`);
+  return fontRes.arrayBuffer();
+}
 
 function getDaysSince(dateStr: string): number {
   const created = new Date(dateStr);
@@ -15,29 +43,23 @@ function getDaysSince(dateStr: string): number {
 
 function formatAge(days: number): string {
   if (days === 0) return "Today";
-  if (days === 1) return "Day 1";
-  if (days < 7) return `Day ${days}`;
+  if (days === 1) return "1 day";
+  if (days < 7) return `${days} days`;
   if (days < 14) return "1 week";
   if (days < 30) return `${Math.floor(days / 7)} weeks`;
   if (days < 60) return "1 month";
   return `${Math.floor(days / 30)} months`;
 }
 
-/** Render filled/empty stars as text */
-function renderStars(filled: number): string {
-  return "★".repeat(filled) + "☆".repeat(5 - filled);
-}
-
-/** Grade colour — warm greens for high grades, amber/grey for lower */
-function gradeColour(grade: string): string {
-  if (grade.startsWith("A")) return "#4ade80"; // bright green
-  if (grade.startsWith("B")) return "#fbbf24"; // amber
-  return "#9ca3af"; // grey
-}
-
-/** Stat bar fill colour */
-function barFillColour(index: number): string {
-  return index === 0 ? "#4ade80" : "#86efac";
+/** Category emoji */
+function categoryEmoji(cat: string): string {
+  const emojis: Record<string, string> = {
+    flower: "\uD83C\uDF38",
+    herb: "\uD83C\uDF3F",
+    vegetable: "\uD83E\uDD66",
+    fruit: "\uD83C\uDF4E",
+  };
+  return emojis[cat] || "\uD83C\uDF31";
 }
 
 export async function GET(
@@ -79,6 +101,7 @@ export async function GET(
 
   const days = getDaysSince(plant.sow_date || plant.created_at);
   const age = formatAge(days);
+  const emoji = categoryEmoji(plant.category);
 
   // Category label
   const categoryLabel: Record<string, string> = {
@@ -89,27 +112,15 @@ export async function GET(
   };
   const category = categoryLabel[plant.category] || "Plant";
 
-  // Determine location — default to outdoor for now
-  // TODO: when spaces feature is built, use space.type
-  const location: "indoor" | "outdoor" = "outdoor";
+  // Build the text that needs the serif font (for subset loading)
+  const serifText = `${plant.common_name || "Plant"}${plant.latin_name || ""}${category}Hazel`;
 
-  // Get ecological impact data
-  const validCategory = (["flower", "herb", "vegetable", "fruit"].includes(
-    plant.category
-  )
-    ? plant.category
-    : "flower") as "flower" | "herb" | "vegetable" | "fruit";
-
-  const impact = getPlantImpact(
-    plant.common_name || "",
-    plant.latin_name || "",
-    validCategory,
-    location,
-    days
-  );
-
-  const stars = renderStars(impact.gradeStars);
-  const gradeCol = gradeColour(impact.impactGrade);
+  // Load Playfair Display (beautiful editorial serif)
+  const [playfairRegular, playfairBold, playfairItalic] = await Promise.all([
+    loadGoogleFont("Playfair+Display", serifText),
+    loadGoogleFont("Playfair+Display:wght@700", serifText),
+    loadGoogleFont("Playfair+Display:ital@1", serifText),
+  ]);
 
   return new ImageResponse(
     (
@@ -121,7 +132,7 @@ export async function GET(
           position: "relative",
         }}
       >
-        {/* Background — plant photo or gradient fallback */}
+        {/* Background — plant photo or deep green gradient */}
         {photoUrl ? (
           <img
             src={photoUrl}
@@ -143,21 +154,22 @@ export async function GET(
               width: 800,
               height: 500,
               background:
-                "linear-gradient(135deg, #1a3a0a 0%, #2d5016 50%, #4a7c23 100%)",
+                "linear-gradient(145deg, #0f2b0a 0%, #1a4012 40%, #2d5a1e 100%)",
             }}
           />
         )}
 
-        {/* Dark gradient overlay — bottom 60% */}
+        {/* Bottom gradient — elegant fade to dark */}
         <div
           style={{
             position: "absolute",
             bottom: 0,
             left: 0,
             width: 800,
-            height: 320,
+            height: 280,
             display: "flex",
-            background: "linear-gradient(transparent, rgba(0,0,0,0.9))",
+            background:
+              "linear-gradient(transparent, rgba(0,0,0,0.75) 50%, rgba(0,0,0,0.92))",
           }}
         />
 
@@ -168,40 +180,13 @@ export async function GET(
             top: 0,
             left: 0,
             width: 800,
-            height: 80,
+            height: 60,
             display: "flex",
-            background: "linear-gradient(rgba(0,0,0,0.3), transparent)",
+            background: "linear-gradient(rgba(0,0,0,0.2), transparent)",
           }}
         />
 
-        {/* Category pill — top left */}
-        <div
-          style={{
-            position: "absolute",
-            top: 20,
-            left: 24,
-            display: "flex",
-            alignItems: "center",
-            background: "rgba(255,255,255,0.15)",
-            borderRadius: 24,
-            padding: "8px 18px",
-            border: "1px solid rgba(255,255,255,0.2)",
-          }}
-        >
-          <span
-            style={{
-              fontSize: 14,
-              color: "rgba(255,255,255,0.9)",
-              fontWeight: 500,
-              letterSpacing: "0.05em",
-              textTransform: "uppercase",
-            }}
-          >
-            {category}
-          </span>
-        </div>
-
-        {/* Hazel branding — top right */}
+        {/* Hazel branding — top right, subtle */}
         <div
           style={{
             position: "absolute",
@@ -209,18 +194,17 @@ export async function GET(
             right: 24,
             display: "flex",
             alignItems: "center",
-            background: "rgba(255,255,255,0.15)",
-            borderRadius: 24,
-            padding: "8px 18px",
-            border: "1px solid rgba(255,255,255,0.2)",
+            gap: 6,
           }}
         >
           <span
             style={{
-              fontSize: 14,
-              color: "rgba(255,255,255,0.9)",
-              fontWeight: 600,
-              letterSpacing: "0.02em",
+              fontSize: 15,
+              color: "rgba(255,255,255,0.5)",
+              fontFamily: "Playfair Display",
+              fontWeight: 400,
+              fontStyle: "italic",
+              letterSpacing: "0.04em",
             }}
           >
             Hazel
@@ -231,124 +215,98 @@ export async function GET(
         <div
           style={{
             position: "absolute",
-            bottom: 20,
-            left: 28,
-            right: 28,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            padding: "0 32px 28px",
             display: "flex",
             flexDirection: "column",
-            gap: 4,
           }}
         >
-          {/* Name row — plant name + grade */}
+          {/* Thin decorative line */}
+          <div
+            style={{
+              width: 40,
+              height: 1,
+              background: "rgba(255,255,255,0.3)",
+              marginBottom: 16,
+              display: "flex",
+            }}
+          />
+
+          {/* Plant name — large, elegant serif */}
+          <span
+            style={{
+              fontSize: 44,
+              fontWeight: 700,
+              color: "white",
+              fontFamily: "Playfair Display",
+              lineHeight: 1.05,
+              textShadow: "0 2px 20px rgba(0,0,0,0.5)",
+            }}
+          >
+            {plant.common_name}
+          </span>
+
+          {/* Latin name — italic serif */}
+          {plant.latin_name && (
+            <span
+              style={{
+                fontSize: 18,
+                color: "rgba(255,255,255,0.55)",
+                fontFamily: "Playfair Display",
+                fontStyle: "italic",
+                marginTop: 4,
+              }}
+            >
+              {plant.latin_name}
+            </span>
+          )}
+
+          {/* Bottom row: category + age */}
           <div
             style={{
               display: "flex",
-              alignItems: "flex-end",
+              alignItems: "center",
               justifyContent: "space-between",
+              marginTop: 16,
             }}
           >
-            {/* Plant name */}
-            <span
-              style={{
-                fontSize: 40,
-                fontWeight: 700,
-                color: "white",
-                fontFamily: "Georgia, serif",
-                textShadow: "0 2px 12px rgba(0,0,0,0.6)",
-                lineHeight: 1.1,
-              }}
-            >
-              {plant.common_name}
-            </span>
-
-            {/* Grade + stars */}
+            {/* Category with emoji */}
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                marginBottom: 4,
               }}
             >
-              <span
-                style={{
-                  fontSize: 14,
-                  color: gradeCol,
-                  letterSpacing: "0.06em",
-                }}
-              >
-                {stars}
-              </span>
-              <span
-                style={{
-                  fontSize: 24,
-                  fontWeight: 700,
-                  color: gradeCol,
-                  fontFamily: "Georgia, serif",
-                }}
-              >
-                {impact.impactGrade}
-              </span>
-            </div>
-          </div>
-
-          {/* Latin name */}
-          <span
-            style={{
-              fontSize: 17,
-              color: "rgba(255,255,255,0.65)",
-              fontStyle: "italic",
-              fontFamily: "Georgia, serif",
-            }}
-          >
-            {plant.latin_name}
-          </span>
-
-          {/* Impact stats row */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-end",
-              gap: 24,
-              marginTop: 12,
-            }}
-          >
-            {/* Stat 1 */}
-            {renderStatBlock(impact.primaryStats[0], 0)}
-
-            {/* Stat 2 */}
-            {renderStatBlock(impact.primaryStats[1], 1)}
-
-            {/* Age — pushed to far right */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                marginLeft: "auto",
-              }}
-            >
+              <span style={{ fontSize: 16 }}>{emoji}</span>
               <span
                 style={{
                   fontSize: 13,
-                  color: "rgba(255,255,255,0.45)",
-                  fontWeight: 500,
+                  color: "rgba(255,255,255,0.5)",
+                  fontFamily: "Playfair Display",
+                  fontWeight: 400,
+                  letterSpacing: "0.12em",
                   textTransform: "uppercase",
-                  letterSpacing: "0.08em",
                 }}
               >
-                Age
-              </span>
-              <span
-                style={{
-                  fontSize: 15,
-                  color: "rgba(255,255,255,0.85)",
-                  fontWeight: 600,
-                }}
-              >
-                {age}
+                {category}
               </span>
             </div>
+
+            {/* Age */}
+            <span
+              style={{
+                fontSize: 13,
+                color: "rgba(255,255,255,0.4)",
+                fontFamily: "Playfair Display",
+                fontWeight: 400,
+                letterSpacing: "0.06em",
+              }}
+            >
+              {age}
+            </span>
           </div>
         </div>
       </div>
@@ -356,60 +314,29 @@ export async function GET(
     {
       width: 800,
       height: 500,
+      fonts: [
+        {
+          name: "Playfair Display",
+          data: playfairRegular,
+          weight: 400,
+          style: "normal",
+        },
+        {
+          name: "Playfair Display",
+          data: playfairBold,
+          weight: 700,
+          style: "normal",
+        },
+        {
+          name: "Playfair Display",
+          data: playfairItalic,
+          weight: 400,
+          style: "italic",
+        },
+      ],
       headers: {
         "Cache-Control": "public, max-age=3600, s-maxage=3600",
       },
     }
-  );
-}
-
-/** Render a single impact stat with emoji, label, and progress bar */
-function renderStatBlock(stat: ImpactStat, index: number) {
-  const fillPct = Math.min(100, Math.round((stat.value / stat.maxValue) * 100));
-  const fillCol = barFillColour(index);
-
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 4,
-      }}
-    >
-      {/* Emoji + label */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span style={{ fontSize: 16 }}>{stat.emoji}</span>
-        <span
-          style={{
-            fontSize: 14,
-            color: "rgba(255,255,255,0.85)",
-            fontWeight: 500,
-          }}
-        >
-          {stat.label}
-        </span>
-      </div>
-
-      {/* Progress bar */}
-      <div
-        style={{
-          display: "flex",
-          width: 120,
-          height: 6,
-          borderRadius: 3,
-          background: "rgba(255,255,255,0.15)",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            width: `${fillPct}%`,
-            height: 6,
-            borderRadius: 3,
-            background: fillCol,
-          }}
-        />
-      </div>
-    </div>
   );
 }

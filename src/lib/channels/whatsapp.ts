@@ -48,9 +48,11 @@ export async function markReadAndType(messageId: string): Promise<void> {
         },
       }),
     });
+    const body = await res.text();
     if (!res.ok) {
-      const err = await res.text();
-      console.error("[HAZEL] markReadAndType failed:", res.status, err);
+      console.error("[HAZEL] markReadAndType failed:", res.status, body);
+    } else {
+      console.log("[HAZEL] markReadAndType OK:", res.status, body);
     }
   } catch (e) {
     console.error("[HAZEL] markReadAndType error:", e);
@@ -83,11 +85,11 @@ export async function showTyping(messageId: string): Promise<void> {
         },
       }),
     });
+    const body = await res.text();
     if (!res.ok) {
-      const err = await res.text();
-      console.error("[HAZEL] showTyping failed:", res.status, err);
+      console.error("[HAZEL] showTyping failed:", res.status, body);
     } else {
-      console.log("[HAZEL] Typing indicator fired for", messageId);
+      console.log("[HAZEL] showTyping OK:", res.status, body);
     }
   } catch (e) {
     console.error("[HAZEL] showTyping error:", e);
