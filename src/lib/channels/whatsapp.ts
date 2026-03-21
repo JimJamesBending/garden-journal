@@ -66,38 +66,41 @@ export async function markReadAndType(messageId: string): Promise<void> {
 /**
  * Show typing indicator.
  *
- * Two modes:
- * 1. messageId only — piggybacks on read receipt (used for FIRST typing call)
- * 2. phone provided — sends typing indicator directly to user via "to" field
- *    (used AFTER an outgoing message has been sent, which cancels the
- *     message-based typing indicator)
+ * Uses the WhatsApp Cloud API typing indicator format — always references
+ * the inbound message_id. After sending an outgoing message (e.g. the ack),
+ * a small delay is needed before re-sending the typing indicator, because
+ * the outgoing message cancels the previous typing state.
+ *
+ * If `delayMs` is provided, waits that many milliseconds before firing.
+ * This is critical for the post-ack typing indicator to work reliably.
  *
  * Fire-and-forget: logs but never throws.
  */
-export async function showTyping(messageId: string, phone?: string): Promise<void> {
+export async function showTyping(
+  messageId: string,
+  phone?: string,
+  delayMs?: number
+): Promise<void> {
+  // Optional delay — used after sending an outgoing message to let
+  // WhatsApp finish processing the outbound before we re-assert typing
+  if (delayMs && delayMs > 0) {
+    await new Promise((r) => setTimeout(r, delayMs));
+  }
+
   const token = getAccessToken();
   const phoneNumberId = getPhoneNumberId();
   const url = `${GRAPH_API}/${phoneNumberId}/messages`;
 
-  // After sending an outgoing message, the read-receipt-based typing indicator
-  // gets silently dropped by WhatsApp. Use phone-based approach instead.
-  const payload = phone
-    ? {
-        messaging_product: "whatsapp",
-        recipient_type: "individual",
-        to: phone,
-        type: "text",
-        // Send typing indicator via the "to" field approach
-        status: "read",
-        message_id: messageId,
-        typing_indicator: { type: "text" },
-      }
-    : {
-        messaging_product: "whatsapp",
-        status: "read",
-        message_id: messageId,
-        typing_indicator: { type: "text" },
-      };
+  // The ONLY correct format per WhatsApp Cloud API docs:
+  // status: "read" + message_id + typing_indicator
+  // No "to" field, no "type" field, no "recipient_type" — those are for
+  // sending messages, not for typing indicators.
+  const payload = {
+    messaging_product: "whatsapp",
+    status: "read",
+    message_id: messageId,
+    typing_indicator: { type: "text" },
+  };
 
   try {
     const res = await fetch(url, {
@@ -119,11 +122,12 @@ export async function showTyping(messageId: string, phone?: string): Promise<voi
     debugLog("show_typing", {
       messageId,
       phone: phone || null,
-      mode: phone ? "phone-based" : "message-based",
+      delayMs: delayMs || 0,
       apiVersion: "v23.0",
       status: res.status,
+      ok: res.ok,
       response: body,
-      payload,
+      payload: JSON.stringify(payload),
       timestamp: new Date().toISOString(),
     });
   } catch (e) {
@@ -169,11 +173,13 @@ export async function markRead(messageId: string): Promise<void> {
 /**
  * Send an image message to a WhatsApp user.
  * The image must be a publicly accessible URL.
+ * Optionally reply to a specific message by passing `replyToMessageId`.
  */
 export async function sendImageMessage(
   to: string,
   imageUrl: string,
-  caption?: string
+  caption?: string,
+  replyToMessageId?: string
 ): Promise<void> {
   const token = getAccessToken();
   const phoneNumberId = getPhoneNumberId();
@@ -181,18 +187,25 @@ export async function sendImageMessage(
   const imagePayload: { link: string; caption?: string } = { link: imageUrl };
   if (caption) imagePayload.caption = caption;
 
+  const payload: Record<string, unknown> = {
+    messaging_product: "whatsapp",
+    to,
+    type: "image",
+    image: imagePayload,
+  };
+
+  // If replying to a specific message, add context
+  if (replyToMessageId) {
+    payload.context = { message_id: replyToMessageId };
+  }
+
   const res = await fetch(`${GRAPH_API}/${phoneNumberId}/messages`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      to,
-      type: "image",
-      image: imagePayload,
-    }),
+    body: JSON.stringify(payload),
   });
 
   if (!res.ok) {
@@ -204,10 +217,28 @@ export async function sendImageMessage(
 
 /**
  * Send a text message to a WhatsApp user.
+ * Optionally reply to a specific message by passing `replyToMessageId`.
+ * Returns the outbound message wamid (useful for typing indicator chaining).
  */
-export async function sendTextMessage(to: string, body: string): Promise<void> {
+export async function sendTextMessage(
+  to: string,
+  body: string,
+  replyToMessageId?: string
+): Promise<string | null> {
   const token = getAccessToken();
   const phoneNumberId = getPhoneNumberId();
+
+  const payload: Record<string, unknown> = {
+    messaging_product: "whatsapp",
+    to,
+    type: "text",
+    text: { body },
+  };
+
+  // If replying to a specific message, add context
+  if (replyToMessageId) {
+    payload.context = { message_id: replyToMessageId };
+  }
 
   const res = await fetch(
     `${GRAPH_API}/${phoneNumberId}/messages`,
@@ -217,12 +248,7 @@ export async function sendTextMessage(to: string, body: string): Promise<void> {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to,
-        type: "text",
-        text: { body },
-      }),
+      body: JSON.stringify(payload),
     }
   );
 
@@ -230,6 +256,14 @@ export async function sendTextMessage(to: string, body: string): Promise<void> {
     const err = await res.text();
     console.error("WhatsApp send failed:", err);
     throw new Error(`WhatsApp send failed: ${res.status}`);
+  }
+
+  // Extract outbound wamid from response
+  try {
+    const data = await res.json() as { messages?: Array<{ id: string }> };
+    return data.messages?.[0]?.id || null;
+  } catch {
+    return null;
   }
 }
 

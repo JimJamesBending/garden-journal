@@ -239,12 +239,14 @@ async function processImageMessage(
     image.id, image.mime_type, image.caption || ""
   );
 
-  // Only the first image in a batch sends the ack
+  // Only the first image in a batch sends the ack (as a reply to the image)
   if (isFirstInBatch) {
-    await sendTextMessage(phone, pickRandom(IMAGE_ACKS));
-    // Re-fire typing indicator with phone — sending the ack cancels the message-based one
-    await showTyping(messageId, phone);
-    console.log("[HAZEL] First in batch — ack sent");
+    await sendTextMessage(phone, pickRandom(IMAGE_ACKS), messageId);
+    // Re-fire typing after 500ms delay — sending the ack cancels typing,
+    // and WhatsApp needs a moment to process the outbound before accepting
+    // a new typing indicator on the same inbound message_id
+    await showTyping(messageId, phone, 500);
+    console.log("[HAZEL] First in batch — ack sent as reply to %s", messageId);
   } else {
     console.log("[HAZEL] Not first in batch — skipping ack");
   }
@@ -258,8 +260,8 @@ async function processImageMessage(
     return;
   }
 
-  // Re-fire typing with phone — batch wait (3-8s) may have expired the indicator
-  await showTyping(messageId, phone);
+  // Re-fire typing — batch wait (3-8s) may have expired the indicator
+  await showTyping(messageId);
 
   // We are the batch winner — process all images together
   console.log("[HAZEL] Claimed batch of %d image(s) for %s", batch.length, phone);
@@ -276,6 +278,7 @@ async function processBatchedImages(
   profileName: string,
   batch: PendingImage[]
 ): Promise<void> {
+  const processingStartedAt = new Date();
   try {
     // Step 1: Resolve user + download ALL images in parallel
     console.log("[HAZEL] Step 1: Resolving user + downloading %d image(s)...", batch.length);
@@ -286,9 +289,9 @@ async function processBatchedImages(
     const { gardenId, conversationId } = resolved;
     console.log("[HAZEL] Step 1 done: user resolved, %d images downloaded", mediaResults.length);
 
-    // Re-fire typing with phone — downloads may have taken a while
+    // Re-fire typing — downloads may have taken a while
     const batchMsgId = batch[0].whatsapp_message_id;
-    await showTyping(batchMsgId, phone);
+    await showTyping(batchMsgId);
 
     // Step 2: Prepare image data for Gemini + start Cloudinary uploads
     const rawImageData = mediaResults.map((r) => ({
@@ -317,13 +320,13 @@ async function processBatchedImages(
     ]);
     console.log("[HAZEL] Step 2 done: context built (plants=%d, isNew=%s)", context.plantCount, context.isNewUser);
 
-    // Re-fire typing with phone before Gemini call
-    await showTyping(batchMsgId, phone);
+    // Re-fire typing before Gemini call
+    await showTyping(batchMsgId);
 
     // Step 4: ONE Gemini call with ALL images
     // Start typing keepalive — Gemini can take 3-10s, typing expires after 25s
     console.log("[HAZEL] Step 3: Asking Gemini... (%d images, textLen=%d)", rawImageData.length, combinedCaption.length);
-    const stopTyping = startTypingKeepalive(batchMsgId, phone);
+    const stopTyping = startTypingKeepalive(batchMsgId);
     let hazelResponse;
     try {
       hazelResponse = await askHazel({
@@ -365,17 +368,31 @@ async function processBatchedImages(
       }
     }
 
-    // Step 7: Save Hazel's response
-    try {
-      await saveMessage(supabase, conversationId, "assistant", hazelResponse.text);
-      console.log("[HAZEL] Step 6 done: response saved");
-    } catch (stepErr) {
-      console.error("[HAZEL] Step 6 FAILED (non-fatal):", String(stepErr));
+    // Step 7: Check for interrupts — did new text messages arrive during processing?
+    const interruptContent = await checkForInterrupt(supabase, conversationId, processingStartedAt);
+    if (interruptContent) {
+      console.log("[HAZEL] Interrupted during image processing! Re-asking Gemini...");
+      const freshContext = await buildGardenContext(supabase, gardenId, conversationId);
+      const freshResponse = await askHazel({
+        userMessage: interruptContent,
+        imageData: rawImageData,
+        gardenContext: freshContext,
+      });
+      hazelResponse = freshResponse;
+      console.log("[HAZEL] Re-asked Gemini (interrupt), new response length=%d", hazelResponse.text.length);
     }
 
-    // Step 8: Send plant cards + text reply
+    // Step 8: Save Hazel's response
+    try {
+      await saveMessage(supabase, conversationId, "assistant", hazelResponse.text);
+      console.log("[HAZEL] Step 8 done: response saved");
+    } catch (stepErr) {
+      console.error("[HAZEL] Step 8 FAILED (non-fatal):", String(stepErr));
+    }
+
+    // Step 9: Send plant cards + text reply (as replies to original message)
     await sendPlantCardsAndReply(
-      supabase, phone, savedPlantIds, context.plantCount, hazelResponse.text
+      supabase, phone, savedPlantIds, context.plantCount, hazelResponse.text, batchMsgId
     );
 
     console.log("[HAZEL] DONE — batch of %d image(s) processed", batch.length);
@@ -395,6 +412,40 @@ async function processBatchedImages(
 }
 
 // ============================================
+// INTERRUPT DETECTION
+// ============================================
+
+/**
+ * Check if new user messages arrived during processing.
+ * Queries messages in this conversation newer than the processing start time.
+ * Returns the new messages content if interrupted, or null.
+ */
+async function checkForInterrupt(
+  supabase: SupabaseClient,
+  conversationId: string,
+  processingStartedAt: Date
+): Promise<string | null> {
+  const { data: newMessages } = await supabase
+    .from("messages")
+    .select("content, created_at")
+    .eq("conversation_id", conversationId)
+    .eq("role", "user")
+    .gt("created_at", processingStartedAt.toISOString())
+    .order("created_at", { ascending: true });
+
+  if (!newMessages || newMessages.length === 0) return null;
+
+  console.log("[HAZEL] INTERRUPT detected: %d new message(s) during processing", newMessages.length);
+  debugLog("interrupt_detected", {
+    conversationId,
+    newMessageCount: newMessages.length,
+    processingStartedAt: processingStartedAt.toISOString(),
+  });
+
+  return newMessages.map((m) => m.content).join("\n");
+}
+
+// ============================================
 // TEXT MESSAGE PROCESSING (immediate, no batching)
 // ============================================
 
@@ -405,6 +456,7 @@ async function processTextMessage(
   messageId: string,
   textContent: string
 ): Promise<void> {
+  const processingStartedAt = new Date();
   try {
     // Step 1: Resolve user
     console.log("[HAZEL] Step 1: Resolving user (text)...");
@@ -412,12 +464,12 @@ async function processTextMessage(
     const { gardenId, conversationId, isNew } = resolved;
     console.log("[HAZEL] Step 1 done: user resolved, isNew =", isNew);
 
-    // Send split ack for returning users with longer messages
+    // Send split ack for returning users with longer messages (as a reply)
     const isShortMessage = textContent.trim().split(/\s+/).length <= 3;
     if (!isNew && !isShortMessage) {
-      await sendTextMessage(phone, pickRandom(TEXT_ACKS));
-      // Re-fire typing with phone — sending the ack cancels the message-based indicator
-      await showTyping(messageId, phone);
+      await sendTextMessage(phone, pickRandom(TEXT_ACKS), messageId);
+      // Re-fire typing after 500ms delay — outbound message cancels typing
+      await showTyping(messageId, undefined, 500);
     }
 
     // Step 2: Build context + save user message IN PARALLEL
@@ -428,12 +480,12 @@ async function processTextMessage(
     ]);
     console.log("[HAZEL] Step 2 done: context built (plants=%d, msgs=%d, isNew=%s)", context.plantCount, context.userMessageCount, context.isNewUser);
 
-    // Re-fire typing with phone before Gemini
-    await showTyping(messageId, phone);
+    // Re-fire typing before Gemini
+    await showTyping(messageId);
 
     // Step 3: Ask Gemini (text only — no images)
     console.log("[HAZEL] Step 3: Asking Gemini... (text only, textLen=%d)", textContent.length);
-    const stopTyping = startTypingKeepalive(messageId, phone);
+    const stopTyping = startTypingKeepalive(messageId);
     let hazelResponse;
     try {
       hazelResponse = await askHazel({
@@ -448,17 +500,31 @@ async function processTextMessage(
       stopTyping();
     }
 
-    // Step 4: Save Hazel's response
-    try {
-      await saveMessage(supabase, conversationId, "assistant", hazelResponse.text);
-      console.log("[HAZEL] Step 4 done: response saved");
-    } catch (stepErr) {
-      console.error("[HAZEL] Step 4 FAILED (non-fatal):", String(stepErr));
+    // Step 4: Check for interrupts — did new messages arrive during processing?
+    const interruptContent = await checkForInterrupt(supabase, conversationId, processingStartedAt);
+    if (interruptContent) {
+      console.log("[HAZEL] Interrupted! Re-asking Gemini with new context...");
+      // Re-build context with the new messages included
+      const freshContext = await buildGardenContext(supabase, gardenId, conversationId);
+      const freshResponse = await askHazel({
+        userMessage: interruptContent,
+        gardenContext: freshContext,
+      });
+      hazelResponse = freshResponse;
+      console.log("[HAZEL] Re-asked Gemini (interrupt), new response length=%d", hazelResponse.text.length);
     }
 
-    // Step 5: Send text reply
-    console.log("[HAZEL] Step 5: Sending reply (length=%d)...", hazelResponse.text.length);
-    await sendTextMessage(phone, hazelResponse.text);
+    // Step 5: Save Hazel's response
+    try {
+      await saveMessage(supabase, conversationId, "assistant", hazelResponse.text);
+      console.log("[HAZEL] Step 5 done: response saved");
+    } catch (stepErr) {
+      console.error("[HAZEL] Step 5 FAILED (non-fatal):", String(stepErr));
+    }
+
+    // Step 6: Send text reply (as a reply to the user's original message)
+    console.log("[HAZEL] Step 6: Sending reply (length=%d)...", hazelResponse.text.length);
+    await sendTextMessage(phone, hazelResponse.text, messageId);
     console.log("[HAZEL] DONE — text reply sent");
   } catch (err) {
     const errMsg = err instanceof Error ? `${err.message}\n${err.stack}` : String(err);
@@ -541,6 +607,7 @@ async function savePlants(
 
 /**
  * Send plant card images and the text reply.
+ * All responses are sent as replies to the user's original message (keeps things tidy).
  * Handles journal reveal using atomic database flag.
  */
 async function sendPlantCardsAndReply(
@@ -548,17 +615,18 @@ async function sendPlantCardsAndReply(
   phone: string,
   savedPlantIds: string[],
   plantsBeforeThisMessage: number,
-  hazelText: string
+  hazelText: string,
+  replyToMessageId?: string
 ): Promise<void> {
   const plantsWereSaved = savedPlantIds.length > 0;
 
-  // Send plant card images
+  // Send plant card images (as replies to the user's message)
   if (plantsWereSaved) {
     console.log("[HAZEL] Step 7: Sending %d plant card(s)...", savedPlantIds.length);
     for (const plantId of savedPlantIds) {
       try {
         const cardUrl = `${APP_URL}/api/card/${plantId}`;
-        await sendImageMessage(phone, cardUrl);
+        await sendImageMessage(phone, cardUrl, undefined, replyToMessageId);
         console.log("[HAZEL] Sent plant card for", plantId);
       } catch (cardErr) {
         console.error("[HAZEL] Card send failed (non-fatal):", cardErr);
@@ -595,9 +663,9 @@ async function sendPlantCardsAndReply(
     }
   }
 
-  // Send the reply
+  // Send the reply (as a reply to the user's original message)
   console.log("[HAZEL] Step 8: Sending reply (length=%d)...", replyText.length);
-  await sendTextMessage(phone, replyText);
+  await sendTextMessage(phone, replyText, replyToMessageId);
 }
 
 /**
