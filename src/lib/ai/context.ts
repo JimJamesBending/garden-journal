@@ -17,6 +17,7 @@ export interface GardenContext {
     status: string;
   }>;
   plantCount: number;
+  userMessageCount: number;
   isNewUser: boolean;
   conversationHistory: Array<{
     role: "user" | "assistant";
@@ -48,13 +49,20 @@ export async function buildGardenContext(
     .order("date", { ascending: false })
     .limit(5);
 
-  // Fetch last 10 messages for conversation context
-  const { data: messages } = await supabase
-    .from("messages")
-    .select("role, content")
-    .eq("conversation_id", conversationId)
-    .order("created_at", { ascending: false })
-    .limit(10);
+  // Fetch last 10 messages for conversation context + count user messages
+  const [{ data: messages }, { count: userMsgCount }] = await Promise.all([
+    supabase
+      .from("messages")
+      .select("role, content")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: false })
+      .limit(10),
+    supabase
+      .from("messages")
+      .select("*", { count: "exact", head: true })
+      .eq("conversation_id", conversationId)
+      .eq("role", "user"),
+  ]);
 
   const mappedPlants = (plants || []).map((p) => ({
     id: p.id,
@@ -88,6 +96,7 @@ export async function buildGardenContext(
     plants: mappedPlants,
     recentLogs: mappedLogs,
     plantCount: mappedPlants.length,
+    userMessageCount: userMsgCount || 0,
     isNewUser: mappedPlants.length === 0 && conversationHistory.length === 0,
     conversationHistory,
   };

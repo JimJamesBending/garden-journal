@@ -261,27 +261,26 @@ async function processMessage(
     // 9. Build and send the text reply
     let replyText = hazelResponse.text;
 
-    // Count user messages to trigger journal reveal on the 3rd
-    const { count: userMessageCount } = await supabase
-      .from("messages")
-      .select("*", { count: "exact", head: true })
-      .eq("conversation_id", conversationId)
-      .eq("role", "user");
+    // Journal reveal: when the 2nd plant is saved (plantCount was < 2 before, now >= 2)
+    const plantsBeforeThisMessage = context.plantCount;
+    const totalPlantsNow = plantsBeforeThisMessage + savedPlantIds.length;
+    const isJournalRevealMoment = plantsBeforeThisMessage < 2 && totalPlantsNow >= 2;
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("public_slug, name")
-      .eq("phone", phone)
-      .single();
+    if (isJournalRevealMoment || plantsWereSaved) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("public_slug, name")
+        .eq("phone", phone)
+        .single();
 
-    const gardenUrl = profile?.public_slug
-      ? `https://garden-project-theta.vercel.app/g/${profile.public_slug}`
-      : null;
+      const gardenUrl = profile?.public_slug
+        ? `https://garden-project-theta.vercel.app/g/${profile.public_slug}`
+        : null;
 
-    // 3rd message: journal reveal moment — only once
-    if (userMessageCount === 3 && gardenUrl) {
-      const name = profile?.name || "lovely";
-      replyText += `\n\n${name}! I've been putting together a little garden journal for you. Have a look — if you like it I'll keep it going!\n${gardenUrl}`;
+      if (isJournalRevealMoment && gardenUrl) {
+        const name = profile?.name || "lovely";
+        replyText += `\n\n${name}! I've been putting together a little garden journal for you. Have a look — if you like it I'll keep it going!\n${gardenUrl}`;
+      }
     }
 
     console.log("[HAZEL] Step 9: Sending reply, length =", replyText.length);
