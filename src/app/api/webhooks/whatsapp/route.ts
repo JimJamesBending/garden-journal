@@ -279,7 +279,7 @@ async function processMessage(
 
       if (isJournalRevealMoment && gardenUrl) {
         const name = profile?.name || "lovely";
-        replyText += `\n\nOh ${name}, I hope you don't mind — I've started putting together a little garden journal for you. Only if you'd like it!\n${gardenUrl}`;
+        replyText += `\n\n${name}! I made this little garden journal for you, if you like!\n${gardenUrl}`;
       }
     }
 
