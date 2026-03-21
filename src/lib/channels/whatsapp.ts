@@ -3,7 +3,7 @@
  * Handles sending messages, downloading media, and uploading to Cloudinary.
  */
 
-const GRAPH_API = "https://graph.facebook.com/v21.0";
+const GRAPH_API = "https://graph.facebook.com/v23.0";
 const CLOUDINARY_CLOUD = "davterbwx";
 const CLOUDINARY_PRESET = "garden_log";
 
