@@ -74,6 +74,26 @@ async function processWebhook(body: WhatsAppWebhookBody): Promise<void> {
   }
 }
 
+// Acknowledgement phrases — keeps conversations feeling natural
+const IMAGE_ACKS = [
+  "Ooh let me have a look...",
+  "Ooh what's this...",
+  "Let me see...",
+  "Hmm let me take a closer look...",
+  "Oh hello, what have we here...",
+];
+
+const TEXT_ACKS = [
+  "Hmmm...",
+  "Let me think...",
+  "Hmm good question...",
+  "One moment...",
+];
+
+function pickRandom(arr: string[]): string {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
 async function processMessage(
   phone: string,
   profileName: string,
@@ -86,9 +106,8 @@ async function processMessage(
 ): Promise<void> {
   const supabase = createAdminClient();
 
-  // Send read receipt + typing indicator immediately
+  // Send read receipt immediately
   await markRead(message.id);
-  await showTyping(phone);
 
   try {
     // 1. Resolve user (find or create)
@@ -113,8 +132,20 @@ async function processMessage(
 
     if (message.type === "text" && message.text) {
       textContent = message.text.body;
+
+      // Send split message for text — but NOT for brand new users (they get a fast welcome)
+      if (!isNew) {
+        await sendTextMessage(phone, pickRandom(TEXT_ACKS));
+        await showTyping(phone);
+      } else {
+        await showTyping(phone);
+      }
     } else if (message.type === "image" && message.image) {
       textContent = message.image.caption || "Sent a photo";
+
+      // Always send split message for images — they take longer to process
+      await sendTextMessage(phone, pickRandom(IMAGE_ACKS));
+      await showTyping(phone);
 
       try {
         const { buffer, mimeType } = await downloadMedia(message.image.id);
