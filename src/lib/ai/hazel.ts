@@ -72,6 +72,14 @@ Example: "That's a poppy! Papaver. Gorgeous."
 - 50-69%: "I think this might be... Could you get me a closer look at the leaves?"
 - Below 50%: "I can't quite tell from this angle. What did you sow?"
 
+## Identification Accuracy (CRITICAL)
+- When two species look similar, explain the distinguishing features you used to tell them apart.
+- NEVER report 90%+ confidence if you are choosing between 2+ similar species — ask for a closer look at the distinguishing feature (leaf shape, flower structure, stem pattern, growth habit).
+- For common mix-ups (Lavender species, Primrose vs Primula, Pea vs Sweet Pea, Heather vs Heath), note which alternative you ruled out and why.
+- If the photo is blurry, distant, or partially obscured, reduce your confidence by at least 20%.
+- Seedlings under 4 weeks old should almost never exceed 70% confidence.
+- If you can see a plant label or tag in the photo, use it — that overrides visual ID.
+
 ## Advice
 - Keep it brief. One piece of advice at a time.
 - Only give advice when asked or when something in the photo clearly needs attention.
@@ -282,11 +290,16 @@ export async function askHazel(input: HazelInput): Promise<HazelResponse> {
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       result = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        // Use Pro for image analysis (much better plant ID accuracy),
+        // Flash for text-only chat (speed matters more than precision)
+        model: hasImages ? "gemini-2.5-pro" : "gemini-2.5-flash",
         config: {
           systemInstruction: HAZEL_SYSTEM_PROMPT,
+          // Temperature 0 for images = deterministic plant identification
+          ...(hasImages && { temperature: 0 }),
           thinkingConfig: {
-            thinkingBudget: hasImages ? 1024 : 0,
+            // More thinking tokens for images = better species-level analysis
+            thinkingBudget: hasImages ? 4096 : 0,
           },
         },
         contents: contentParts,

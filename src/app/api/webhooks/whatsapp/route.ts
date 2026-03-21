@@ -332,7 +332,7 @@ async function processBatchedImages(
         try {
           const sharp = (await import("sharp")).default;
           const resized = await sharp(r.buffer)
-            .resize({ width: 800, withoutEnlargement: true })
+            .resize({ width: 1200, withoutEnlargement: true })
             .jpeg({ quality: 80 })
             .toBuffer();
           return { base64: resized.toString("base64"), mimeType: "image/jpeg" };
@@ -584,7 +584,8 @@ async function processTextMessage(
 // ============================================
 
 /**
- * Save identified plants — only high-confidence IDs (85%+), max 20.
+ * Save identified plants — only high-confidence IDs (90%+), max 20.
+ * Skips duplicates (same common_name or latin_name already in garden).
  * Returns array of saved plant IDs.
  */
 async function savePlants(
@@ -601,13 +602,42 @@ async function savePlants(
     return savedPlantIds;
   }
 
+  // Fetch existing plants to detect duplicates
+  const { data: existingPlants } = await supabase
+    .from("plants")
+    .select("common_name, latin_name")
+    .eq("garden_id", gardenId);
+
+  const existingNames = new Set(
+    (existingPlants || []).map((p) => p.common_name?.toLowerCase())
+  );
+  const existingLatinNames = new Set(
+    (existingPlants || []).map((p) => p.latin_name?.toLowerCase()).filter(Boolean)
+  );
+
   for (let i = 0; i < plantsToSave.length; i++) {
     const plant = plantsToSave[i];
-    // Skip low-confidence guesses — don't pollute the garden with wrong IDs
-    if (plant.confidence < 85) {
+    // Skip low-confidence guesses — only save plants we're genuinely sure about
+    if (plant.confidence < 90) {
       console.log("[HAZEL] Skipping low-confidence plant:", plant.commonName, plant.confidence);
       continue;
     }
+
+    // Skip duplicates — don't add the same plant twice
+    const nameLower = plant.commonName.toLowerCase();
+    const latinLower = plant.latinName?.toLowerCase();
+    if (existingNames.has(nameLower)) {
+      console.log("[HAZEL] Skipping duplicate plant (name match):", plant.commonName);
+      continue;
+    }
+    if (latinLower && existingLatinNames.has(latinLower)) {
+      console.log("[HAZEL] Skipping duplicate plant (latin match):", plant.commonName, "=", plant.latinName);
+      continue;
+    }
+
+    // Track this plant so we don't add duplicates within the same batch
+    existingNames.add(nameLower);
+    if (latinLower) existingLatinNames.add(latinLower);
     try {
       const createdPlant = await createPlant(supabase, gardenId, {
         commonName: plant.commonName,
