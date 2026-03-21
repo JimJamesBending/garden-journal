@@ -345,3 +345,124 @@ create policy "spaces_select" on public.spaces for select using (public.user_own
 create policy "spaces_insert" on public.spaces for insert with check (public.user_owns_garden(garden_id));
 create policy "spaces_update" on public.spaces for update using (public.user_owns_garden(garden_id));
 create policy "spaces_delete" on public.spaces for delete using (public.user_owns_garden(garden_id));
+
+-- ============================================
+-- MISSING INDEXES (performance)
+-- ============================================
+
+create index if not exists idx_gardens_owner on public.gardens(owner_id);
+create index if not exists idx_conversations_profile on public.conversations(profile_id);
+create index if not exists idx_growth_garden on public.growth_entries(garden_id);
+
+-- ============================================
+-- RPC FUNCTIONS
+-- These run in production and are used by the
+-- WhatsApp webhook for atomic batch operations.
+-- ============================================
+
+/**
+ * enqueue_pending_image
+ * Atomically inserts a pending image into the batch queue.
+ * Uses FOR UPDATE lock to check if this is the first image
+ * in a batch for this phone number.
+ * Returns TRUE if this is the first image (caller should send the ack).
+ */
+create or replace function public.enqueue_pending_image(
+  p_phone text,
+  p_profile_name text,
+  p_message_id text,
+  p_media_id text,
+  p_mime_type text,
+  p_caption text
+)
+returns boolean
+language plpgsql
+security definer
+as $$
+declare
+  existing_count int;
+begin
+  -- Lock any existing rows for this phone to prevent race conditions
+  select count(*) into existing_count
+  from public.pending_images
+  where phone = p_phone
+  for update;
+
+  -- Insert the new pending image
+  insert into public.pending_images (phone, profile_name, whatsapp_message_id, media_id, mime_type, caption)
+  values (p_phone, p_profile_name, p_message_id, p_media_id, p_mime_type, p_caption);
+
+  -- Return true if this was the first image (no existing rows before insert)
+  return existing_count = 0;
+end;
+$$;
+
+/**
+ * try_claim_image_batch
+ * Atomically claims all pending images for a phone number.
+ * Uses a Postgres advisory lock keyed on the phone number hash
+ * to ensure only one invocation processes the batch.
+ * Returns the batch rows if this caller wins, empty set otherwise.
+ */
+create or replace function public.try_claim_image_batch(
+  user_phone text
+)
+returns setof public.pending_images
+language plpgsql
+security definer
+as $$
+declare
+  lock_key bigint;
+begin
+  -- Generate a consistent lock key from the phone number
+  lock_key := hashtext(user_phone);
+
+  -- Try to acquire advisory lock (non-blocking)
+  if not pg_try_advisory_xact_lock(lock_key) then
+    -- Another invocation is already processing — return empty
+    return;
+  end if;
+
+  -- We won the lock — return and delete all pending images for this phone
+  return query
+    delete from public.pending_images
+    where phone = user_phone
+    returning *;
+end;
+$$;
+
+/**
+ * try_reveal_journal
+ * Atomically sets journal_revealed = true for a profile.
+ * Returns TRUE only if the flag was previously false (first caller wins).
+ * Prevents duplicate journal reveal messages.
+ */
+create or replace function public.try_reveal_journal(
+  profile_phone text
+)
+returns boolean
+language plpgsql
+security definer
+as $$
+declare
+  was_revealed boolean;
+begin
+  -- Lock the profile row and check current state
+  select journal_revealed into was_revealed
+  from public.profiles
+  where phone = profile_phone
+  for update;
+
+  -- If not found or already revealed, return false
+  if not found or was_revealed then
+    return false;
+  end if;
+
+  -- Set the flag — first caller wins
+  update public.profiles
+  set journal_revealed = true
+  where phone = profile_phone;
+
+  return true;
+end;
+$$;

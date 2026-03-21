@@ -434,7 +434,7 @@ export interface WhatsAppWebhookEntry {
         from: string;
         id: string;
         timestamp: string;
-        type: "text" | "image" | "audio" | "video" | "document";
+        type: "text" | "image" | "audio" | "video" | "document" | "sticker" | "reaction" | "location" | "contacts" | "interactive" | "order" | "system";
         text?: { body: string };
         image?: { id: string; mime_type: string; caption?: string };
       }>;

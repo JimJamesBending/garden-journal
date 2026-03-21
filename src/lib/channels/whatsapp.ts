@@ -58,6 +58,56 @@ export async function markReadAndType(messageId: string): Promise<void> {
 }
 
 /**
+ * Show typing indicator only (no read receipt).
+ * Use this for re-fires during long processing — the original
+ * markReadAndType already sent the read receipt.
+ * Fire-and-forget: logs but never throws.
+ */
+export async function showTyping(messageId: string): Promise<void> {
+  const token = getAccessToken();
+  const phoneNumberId = getPhoneNumberId();
+
+  try {
+    const res = await fetch(`${GRAPH_API}/${phoneNumberId}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        status: "read",
+        message_id: messageId,
+        typing_indicator: {
+          type: "text",
+        },
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      console.error("[HAZEL] showTyping failed:", res.status, err);
+    } else {
+      console.log("[HAZEL] Typing indicator fired for", messageId);
+    }
+  } catch (e) {
+    console.error("[HAZEL] showTyping error:", e);
+  }
+}
+
+/**
+ * Keeps typing indicator alive during long operations.
+ * Re-fires every 20 seconds (typing expires after 25s).
+ * Returns a cancel function.
+ */
+export function startTypingKeepalive(messageId: string): () => void {
+  const interval = setInterval(() => {
+    showTyping(messageId).catch(() => {});
+  }, 20_000);
+
+  return () => clearInterval(interval);
+}
+
+/**
  * Mark a message as read (blue ticks) without typing indicator.
  */
 export async function markRead(messageId: string): Promise<void> {

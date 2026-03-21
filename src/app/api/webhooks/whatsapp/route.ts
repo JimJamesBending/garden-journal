@@ -8,6 +8,9 @@ import {
   sendTextMessage,
   sendImageMessage,
   markReadAndType,
+  markRead,
+  showTyping,
+  startTypingKeepalive,
   downloadMedia,
   uploadToCloudinary,
 } from "@/lib/channels/whatsapp";
@@ -124,6 +127,10 @@ function pickRandom(arr: string[]): string {
 // MESSAGE ROUTER
 // ============================================
 
+// Message types that should be silently blue-ticked with NO reply.
+// These are conversational fluff that shouldn't interrupt ongoing processing.
+const SILENT_TYPES = ["sticker", "reaction", "location", "contacts", "interactive", "order", "system"];
+
 async function processMessage(
   phone: string,
   profileName: string,
@@ -134,6 +141,12 @@ async function processMessage(
     image?: { id: string; mime_type: string; caption?: string };
   }
 ): Promise<void> {
+  // SILENT: stickers, reactions, location, etc. — blue-tick only, no reply
+  if (SILENT_TYPES.includes(message.type)) {
+    await markRead(message.id);
+    return;
+  }
+
   const supabase = createAdminClient();
 
   // Send read receipt + typing indicator IMMEDIATELY — before any DB work
@@ -151,10 +164,10 @@ async function processMessage(
     return;
   }
 
-  // UNSUPPORTED: voice, video, document, etc.
+  // UNSUPPORTED MEDIA: audio, video, document — short in-character reply
   await sendTextMessage(
     phone,
-    "I can read text messages and photos at the moment. Send me a picture of something growing and I will have a look!"
+    "I can only look at photos for now — send me a snap of what's growing! 🌱"
   );
 }
 
@@ -180,7 +193,7 @@ async function processImageMessage(
   if (isFirstInBatch) {
     await sendTextMessage(phone, pickRandom(IMAGE_ACKS));
     // Re-fire typing indicator — sending the ack cancels the previous one
-    await markReadAndType(messageId);
+    await showTyping(messageId);
     console.log("[HAZEL] First in batch — ack sent");
   } else {
     console.log("[HAZEL] Not first in batch — skipping ack");
@@ -194,6 +207,9 @@ async function processImageMessage(
     console.log("[HAZEL] Batch already claimed by another invocation for %s", phone);
     return;
   }
+
+  // Re-fire typing — batch wait (3-8s) may have expired the indicator
+  await showTyping(messageId);
 
   // We are the batch winner — process all images together
   console.log("[HAZEL] Claimed batch of %d image(s) for %s", batch.length, phone);
@@ -221,7 +237,8 @@ async function processBatchedImages(
     console.log("[HAZEL] Step 1 done: user resolved, %d images downloaded", mediaResults.length);
 
     // Re-fire typing — downloads may have taken a while
-    await markReadAndType(batch[0].whatsapp_message_id);
+    const batchMsgId = batch[0].whatsapp_message_id;
+    await showTyping(batchMsgId);
 
     // Step 2: Prepare image data for Gemini + start Cloudinary uploads
     const rawImageData = mediaResults.map((r) => ({
@@ -250,8 +267,13 @@ async function processBatchedImages(
     ]);
     console.log("[HAZEL] Step 2 done: context built (plants=%d, isNew=%s)", context.plantCount, context.isNewUser);
 
+    // Re-fire typing before Gemini call
+    await showTyping(batchMsgId);
+
     // Step 4: ONE Gemini call with ALL images
+    // Start typing keepalive — Gemini can take 3-10s, typing expires after 25s
     console.log("[HAZEL] Step 3: Asking Gemini... (%d images, textLen=%d)", rawImageData.length, combinedCaption.length);
+    const stopTyping = startTypingKeepalive(batchMsgId);
     let hazelResponse;
     try {
       hazelResponse = await askHazel({
@@ -267,6 +289,8 @@ async function processBatchedImages(
     } catch (stepErr) {
       console.error("[HAZEL] Step 3 FAILED (Gemini):", stepErr instanceof Error ? stepErr.message + "\n" + stepErr.stack : String(stepErr));
       throw stepErr;
+    } finally {
+      stopTyping();
     }
 
     // Step 5: Resolve Cloudinary uploads
@@ -331,7 +355,7 @@ async function processTextMessage(
     if (!isNew && !isShortMessage) {
       await sendTextMessage(phone, pickRandom(TEXT_ACKS));
       // Re-fire typing — sending the ack cancels the previous indicator
-      await markReadAndType(messageId);
+      await showTyping(messageId);
     }
 
     // Step 2: Build context + save user message IN PARALLEL
@@ -342,8 +366,12 @@ async function processTextMessage(
     ]);
     console.log("[HAZEL] Step 2 done: context built (plants=%d, msgs=%d, isNew=%s)", context.plantCount, context.userMessageCount, context.isNewUser);
 
+    // Re-fire typing before Gemini
+    await showTyping(messageId);
+
     // Step 3: Ask Gemini (text only — no images)
     console.log("[HAZEL] Step 3: Asking Gemini... (text only, textLen=%d)", textContent.length);
+    const stopTyping = startTypingKeepalive(messageId);
     let hazelResponse;
     try {
       hazelResponse = await askHazel({
@@ -354,6 +382,8 @@ async function processTextMessage(
     } catch (stepErr) {
       console.error("[HAZEL] Step 3 FAILED (Gemini):", stepErr instanceof Error ? stepErr.message + "\n" + stepErr.stack : String(stepErr));
       throw stepErr;
+    } finally {
+      stopTyping();
     }
 
     // Step 4: Save Hazel's response

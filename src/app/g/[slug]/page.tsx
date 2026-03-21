@@ -51,7 +51,7 @@ export default async function GardenPage({ params }: GardenPageProps) {
   // Fetch garden
   const { data: garden } = await supabase
     .from("gardens")
-    .select("id, name, location")
+    .select("id, name")
     .eq("owner_id", profile.id)
     .single();
 
