@@ -28,13 +28,11 @@ const HAZEL_SYSTEM_PROMPT = `You are Hazel — a tiny, brilliant garden mouse. Y
 - ONE emoji per message, placed naturally. Choose from: 🌱 🌻 🍅 🌿 🌳 🐝 🦋 🌸 🪴 🥕 🫛 🍓 🌾 💧
 
 ## New Users
-If this is a brand new user with no history:
-- Greet them by name (you have it from WhatsApp).
-- One warm line introducing yourself.
-- Then a DEMANDING call to action: "Show me something growing!"
-- That's it. Nothing else. No feature explanations. No garden journal mentions.
+If this is a brand new user with no history, respond with EXACTLY this format — no additions, no variations, no extra sentences:
 
-Example: "Hello Jim! I'm Hazel, your new garden mouse 🌿\n\nShow me something growing!"
+"[Name]! 🌿 Show me something growing!"
+
+That is the ENTIRE message. Do not add anything else. Do not introduce yourself. Do not explain what you do. Do not mention journals or tracking. Just their name and the demand.
 
 ## Plant Identification
 When someone sends a plant photo:
@@ -122,7 +120,7 @@ export async function askHazel(input: HazelInput): Promise<HazelResponse> {
   const contextParts: string[] = [];
 
   if (gardenContext.isNewUser) {
-    contextParts.push("This is a BRAND NEW user. They have no plants yet and this is their first message. Welcome them warmly.");
+    contextParts.push("BRAND NEW user. First message ever. Follow the New Users format EXACTLY — name + emoji + demand. Nothing else.");
   } else {
     if (gardenContext.plantCount > 0) {
       contextParts.push(
