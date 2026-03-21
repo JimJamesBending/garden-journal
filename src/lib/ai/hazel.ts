@@ -237,19 +237,38 @@ export async function askHazel(input: HazelInput): Promise<HazelResponse> {
   // skip it for text-only (chat responses need speed, not reasoning chains)
   const hasImages = (imageData && imageData.length > 0) || (imageUrls && imageUrls.length > 0);
 
-  const result = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    config: {
-      systemInstruction: HAZEL_SYSTEM_PROMPT,
-      thinkingConfig: {
-        thinkingBudget: hasImages ? 1024 : 0,
-      },
-    },
-    contents: contentParts,
-  });
+  // Retry wrapper for transient Gemini errors (503, 429)
+  let result;
+  const MAX_RETRIES = 2;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      result = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        config: {
+          systemInstruction: HAZEL_SYSTEM_PROMPT,
+          thinkingConfig: {
+            thinkingBudget: hasImages ? 1024 : 0,
+          },
+        },
+        contents: contentParts,
+      });
+      break; // Success
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      const isRetryable = errMsg.includes("503") || errMsg.includes("429") ||
+        errMsg.includes("UNAVAILABLE") || errMsg.includes("RESOURCE_EXHAUSTED");
+      if (isRetryable && attempt < MAX_RETRIES) {
+        const delay = (attempt + 1) * 1000; // 1s, 2s
+        console.log(`[HAZEL] Gemini retry ${attempt + 1}/${MAX_RETRIES} after ${delay}ms: ${errMsg.slice(0, 80)}`);
+        await new Promise((r) => setTimeout(r, delay));
+        continue;
+      }
+      throw err;
+    }
+  }
 
   // Parse the response
-  const responseText = result.text?.trim();
+  const responseText = result?.text?.trim();
   if (!responseText) {
     return {
       text: "Sorry, I had a moment there. Could you send that again?",

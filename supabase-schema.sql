@@ -277,6 +277,9 @@ alter table public.soil_readings enable row level security;
 alter table public.advice_entries enable row level security;
 alter table public.weather_cache enable row level security;
 alter table public.spaces enable row level security;
+alter table public.conversations enable row level security;
+alter table public.messages enable row level security;
+alter table public.pending_images enable row level security;
 
 -- Profiles: own profile only
 create policy "Users can view own profile"
@@ -345,6 +348,22 @@ create policy "spaces_select" on public.spaces for select using (public.user_own
 create policy "spaces_insert" on public.spaces for insert with check (public.user_owns_garden(garden_id));
 create policy "spaces_update" on public.spaces for update using (public.user_owns_garden(garden_id));
 create policy "spaces_delete" on public.spaces for delete using (public.user_owns_garden(garden_id));
+
+-- Conversations: users can only see their own conversations
+create policy "conversations_select" on public.conversations for select using (profile_id = auth.uid());
+create policy "conversations_insert" on public.conversations for insert with check (profile_id = auth.uid());
+create policy "conversations_update" on public.conversations for update using (profile_id = auth.uid());
+
+-- Messages: users can see messages in their own conversations
+create policy "messages_select" on public.messages for select using (
+  exists (select 1 from public.conversations where id = conversation_id and profile_id = auth.uid())
+);
+create policy "messages_insert" on public.messages for insert with check (
+  exists (select 1 from public.conversations where id = conversation_id and profile_id = auth.uid())
+);
+
+-- Pending images: service role only (no user access needed, webhook uses admin client)
+-- No policies = no access via anon key, only service_role bypasses RLS
 
 -- ============================================
 -- MISSING INDEXES (performance)

@@ -11,19 +11,23 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
-  const supabase = await createClient();
-  const gardenId = await getGardenId(supabase);
+  try {
+    const { id } = await params;
+    const supabase = await createClient();
+    const gardenId = await getGardenId(supabase);
 
-  // Fetch all logs and find the one with matching id
-  const logs = await getLogs(supabase, gardenId, {});
-  const log = logs.find((l: { id: string }) => l.id === id);
+    // Fetch all logs and find the one with matching id
+    const logs = await getLogs(supabase, gardenId, {});
+    const log = logs.find((l: { id: string }) => l.id === id);
 
-  if (!log) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!log) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(log);
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
-  return NextResponse.json(log);
 }
 
 export async function PUT(

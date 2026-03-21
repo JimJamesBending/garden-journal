@@ -10,15 +10,19 @@ import { CareEventType } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const plantId = searchParams.get("plantId") || undefined;
+  try {
+    const { searchParams } = new URL(request.url);
+    const plantId = searchParams.get("plantId") || undefined;
 
-  const supabase = await createClient();
-  const gardenId = await getGardenId(supabase);
+    const supabase = await createClient();
+    const gardenId = await getGardenId(supabase);
 
-  const events = await getCareEvents(supabase, gardenId, plantId);
+    const events = await getCareEvents(supabase, gardenId, plantId);
 
-  return NextResponse.json(events);
+    return NextResponse.json(events);
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 }
 
 export async function POST(request: NextRequest) {

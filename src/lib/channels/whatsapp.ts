@@ -64,24 +64,40 @@ export async function markReadAndType(messageId: string): Promise<void> {
 }
 
 /**
- * Show typing indicator only.
- * Sends as a dedicated call — NOT combined with read receipt.
+ * Show typing indicator.
+ *
+ * Two modes:
+ * 1. messageId only — piggybacks on read receipt (used for FIRST typing call)
+ * 2. phone provided — sends typing indicator directly to user via "to" field
+ *    (used AFTER an outgoing message has been sent, which cancels the
+ *     message-based typing indicator)
+ *
  * Fire-and-forget: logs but never throws.
  */
-export async function showTyping(messageId: string): Promise<void> {
+export async function showTyping(messageId: string, phone?: string): Promise<void> {
   const token = getAccessToken();
   const phoneNumberId = getPhoneNumberId();
   const url = `${GRAPH_API}/${phoneNumberId}/messages`;
 
-  // The documented format: typing_indicator on a read-receipt call
-  const documentedPayload = {
-    messaging_product: "whatsapp",
-    status: "read",
-    message_id: messageId,
-    typing_indicator: {
-      type: "text",
-    },
-  };
+  // After sending an outgoing message, the read-receipt-based typing indicator
+  // gets silently dropped by WhatsApp. Use phone-based approach instead.
+  const payload = phone
+    ? {
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: phone,
+        type: "text",
+        // Send typing indicator via the "to" field approach
+        status: "read",
+        message_id: messageId,
+        typing_indicator: { type: "text" },
+      }
+    : {
+        messaging_product: "whatsapp",
+        status: "read",
+        message_id: messageId,
+        typing_indicator: { type: "text" },
+      };
 
   try {
     const res = await fetch(url, {
@@ -90,7 +106,7 @@ export async function showTyping(messageId: string): Promise<void> {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(documentedPayload),
+      body: JSON.stringify(payload),
     });
     const body = await res.text();
 
@@ -100,18 +116,19 @@ export async function showTyping(messageId: string): Promise<void> {
       console.log("[HAZEL] showTyping OK:", res.status, body);
     }
 
-    // Log full details to Supabase for debugging
     debugLog("show_typing", {
       messageId,
+      phone: phone || null,
+      mode: phone ? "phone-based" : "message-based",
       apiVersion: "v23.0",
       status: res.status,
       response: body,
-      payload: documentedPayload,
+      payload,
       timestamp: new Date().toISOString(),
     });
   } catch (e) {
     console.error("[HAZEL] showTyping error:", e);
-    debugLog("show_typing_error", { messageId, error: String(e) });
+    debugLog("show_typing_error", { messageId, phone: phone || null, error: String(e) });
   }
 }
 
@@ -120,9 +137,9 @@ export async function showTyping(messageId: string): Promise<void> {
  * Re-fires every 20 seconds (typing expires after 25s).
  * Returns a cancel function.
  */
-export function startTypingKeepalive(messageId: string): () => void {
+export function startTypingKeepalive(messageId: string, phone?: string): () => void {
   const interval = setInterval(() => {
-    showTyping(messageId).catch(() => {});
+    showTyping(messageId, phone).catch(() => {});
   }, 20_000);
 
   return () => clearInterval(interval);

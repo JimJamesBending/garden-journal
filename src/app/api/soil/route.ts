@@ -9,15 +9,19 @@ import {
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const plantId = searchParams.get("plantId") || undefined;
+  try {
+    const { searchParams } = new URL(request.url);
+    const plantId = searchParams.get("plantId") || undefined;
 
-  const supabase = await createClient();
-  const gardenId = await getGardenId(supabase);
+    const supabase = await createClient();
+    const gardenId = await getGardenId(supabase);
 
-  const readings = await getSoilReadings(supabase, gardenId, plantId);
+    const readings = await getSoilReadings(supabase, gardenId, plantId);
 
-  return NextResponse.json(readings);
+    return NextResponse.json(readings);
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 }
 
 export async function POST(request: NextRequest) {

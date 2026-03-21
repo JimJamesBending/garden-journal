@@ -32,6 +32,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Provide imageUrl or textQuery" }, { status: 400 });
   }
 
+  // SSRF protection: only allow Cloudinary image URLs
+  if (imageUrl && !imageUrl.startsWith("https://res.cloudinary.com/")) {
+    return NextResponse.json({ error: "Invalid image URL" }, { status: 400 });
+  }
+
   if (!process.env.GEMINI_API_KEY) {
     return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
   }

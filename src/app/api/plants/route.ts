@@ -5,10 +5,14 @@ import { getGardenId, getPlants, createPlant } from "@/lib/supabase/queries";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const supabase = await createClient();
-  const gardenId = await getGardenId(supabase);
-  const plants = await getPlants(supabase, gardenId);
-  return NextResponse.json(plants);
+  try {
+    const supabase = await createClient();
+    const gardenId = await getGardenId(supabase);
+    const plants = await getPlants(supabase, gardenId);
+    return NextResponse.json(plants);
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 }
 
 export async function POST(request: NextRequest) {

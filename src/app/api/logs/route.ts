@@ -10,16 +10,20 @@ import {
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const plantId = searchParams.get("plantId") || undefined;
-  const unlabeled = searchParams.get("unlabeled") === "true" || undefined;
+  try {
+    const { searchParams } = new URL(request.url);
+    const plantId = searchParams.get("plantId") || undefined;
+    const unlabeled = searchParams.get("unlabeled") === "true" || undefined;
 
-  const supabase = await createClient();
-  const gardenId = await getGardenId(supabase);
+    const supabase = await createClient();
+    const gardenId = await getGardenId(supabase);
 
-  const logs = await getLogs(supabase, gardenId, { plantId, unlabeled });
+    const logs = await getLogs(supabase, gardenId, { plantId, unlabeled });
 
-  return NextResponse.json(logs);
+    return NextResponse.json(logs);
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 }
 
 export async function POST(request: NextRequest) {

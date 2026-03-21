@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { verifyWebhookSignature } from "@/lib/webhook-verify";
 import { resolveWhatsAppUser } from "@/lib/channels/resolve-user";
 import { saveMessage } from "@/lib/channels/save-message";
 import {
@@ -24,6 +25,9 @@ import { buildGardenContext } from "@/lib/ai/context";
 import { createPlant, createLog } from "@/lib/supabase/queries";
 import type { WhatsAppWebhookBody } from "@/lib/types";
 import { debugLog } from "@/lib/debug-log";
+
+/** Base URL for plant cards and garden journal links */
+const APP_URL = process.env.APP_URL || "https://garden-project-theta.vercel.app";
 
 /**
  * Extend the max execution time for this route.
@@ -61,10 +65,27 @@ export async function GET(req: NextRequest) {
 /**
  * POST /api/webhooks/whatsapp
  * Receives incoming WhatsApp messages.
- * Returns 200 immediately, processes the message asynchronously.
+ * Verifies signature, returns 200 immediately, processes asynchronously.
  */
 export async function POST(req: NextRequest) {
-  const body = (await req.json()) as WhatsAppWebhookBody;
+  // Read raw body for signature verification
+  const rawBody = await req.text();
+
+  // Verify webhook signature (if app secret is configured)
+  const appSecret = process.env.WHATSAPP_APP_SECRET;
+  if (appSecret) {
+    const signature = req.headers.get("x-hub-signature-256");
+    if (!verifyWebhookSignature(rawBody, signature, appSecret)) {
+      console.error("[HAZEL] Webhook signature verification failed");
+      debugLog("webhook_signature_failed", {
+        hasSignature: !!signature,
+        timestamp: new Date().toISOString(),
+      });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
+
+  const body = JSON.parse(rawBody) as WhatsAppWebhookBody;
 
   // Return 200 immediately — Meta requires fast response
   // Process the message asynchronously via waitUntil
@@ -90,6 +111,21 @@ async function processWebhook(body: WhatsAppWebhookBody): Promise<void> {
           const phone = message.from;
           const profileName =
             value.contacts?.[0]?.profile?.name || "Gardener";
+
+          // Idempotency: skip duplicate webhook deliveries
+          const supabaseCheck = createAdminClient();
+          const { data: existingMsg } = await supabaseCheck
+            .from("messages")
+            .select("id")
+            .eq("metadata->>whatsapp_message_id", message.id)
+            .limit(1)
+            .maybeSingle();
+
+          if (existingMsg) {
+            console.log("[HAZEL] Duplicate webhook skipped:", message.id);
+            debugLog("webhook_duplicate", { messageId: message.id });
+            continue;
+          }
 
           // Log every incoming message for debugging
           debugLog("webhook_message", {
@@ -205,8 +241,8 @@ async function processImageMessage(
   // Only the first image in a batch sends the ack
   if (isFirstInBatch) {
     await sendTextMessage(phone, pickRandom(IMAGE_ACKS));
-    // Re-fire typing indicator — sending the ack cancels the previous one
-    await showTyping(messageId);
+    // Re-fire typing indicator with phone — sending the ack cancels the message-based one
+    await showTyping(messageId, phone);
     console.log("[HAZEL] First in batch — ack sent");
   } else {
     console.log("[HAZEL] Not first in batch — skipping ack");
@@ -221,8 +257,8 @@ async function processImageMessage(
     return;
   }
 
-  // Re-fire typing — batch wait (3-8s) may have expired the indicator
-  await showTyping(messageId);
+  // Re-fire typing with phone — batch wait (3-8s) may have expired the indicator
+  await showTyping(messageId, phone);
 
   // We are the batch winner — process all images together
   console.log("[HAZEL] Claimed batch of %d image(s) for %s", batch.length, phone);
@@ -249,9 +285,9 @@ async function processBatchedImages(
     const { gardenId, conversationId } = resolved;
     console.log("[HAZEL] Step 1 done: user resolved, %d images downloaded", mediaResults.length);
 
-    // Re-fire typing — downloads may have taken a while
+    // Re-fire typing with phone — downloads may have taken a while
     const batchMsgId = batch[0].whatsapp_message_id;
-    await showTyping(batchMsgId);
+    await showTyping(batchMsgId, phone);
 
     // Step 2: Prepare image data for Gemini + start Cloudinary uploads
     const rawImageData = mediaResults.map((r) => ({
@@ -280,13 +316,13 @@ async function processBatchedImages(
     ]);
     console.log("[HAZEL] Step 2 done: context built (plants=%d, isNew=%s)", context.plantCount, context.isNewUser);
 
-    // Re-fire typing before Gemini call
-    await showTyping(batchMsgId);
+    // Re-fire typing with phone before Gemini call
+    await showTyping(batchMsgId, phone);
 
     // Step 4: ONE Gemini call with ALL images
     // Start typing keepalive — Gemini can take 3-10s, typing expires after 25s
     console.log("[HAZEL] Step 3: Asking Gemini... (%d images, textLen=%d)", rawImageData.length, combinedCaption.length);
-    const stopTyping = startTypingKeepalive(batchMsgId);
+    const stopTyping = startTypingKeepalive(batchMsgId, phone);
     let hazelResponse;
     try {
       hazelResponse = await askHazel({
@@ -367,8 +403,8 @@ async function processTextMessage(
     const isShortMessage = textContent.trim().split(/\s+/).length <= 3;
     if (!isNew && !isShortMessage) {
       await sendTextMessage(phone, pickRandom(TEXT_ACKS));
-      // Re-fire typing — sending the ack cancels the previous indicator
-      await showTyping(messageId);
+      // Re-fire typing with phone — sending the ack cancels the message-based indicator
+      await showTyping(messageId, phone);
     }
 
     // Step 2: Build context + save user message IN PARALLEL
@@ -379,12 +415,12 @@ async function processTextMessage(
     ]);
     console.log("[HAZEL] Step 2 done: context built (plants=%d, msgs=%d, isNew=%s)", context.plantCount, context.userMessageCount, context.isNewUser);
 
-    // Re-fire typing before Gemini
-    await showTyping(messageId);
+    // Re-fire typing with phone before Gemini
+    await showTyping(messageId, phone);
 
     // Step 3: Ask Gemini (text only — no images)
     console.log("[HAZEL] Step 3: Asking Gemini... (text only, textLen=%d)", textContent.length);
-    const stopTyping = startTypingKeepalive(messageId);
+    const stopTyping = startTypingKeepalive(messageId, phone);
     let hazelResponse;
     try {
       hazelResponse = await askHazel({
@@ -431,7 +467,7 @@ async function processTextMessage(
 // ============================================
 
 /**
- * Save identified plants — only high-confidence IDs (85%+), max 3.
+ * Save identified plants — only high-confidence IDs (85%+), max 20.
  * Returns array of saved plant IDs.
  */
 async function savePlants(
@@ -508,7 +544,7 @@ async function sendPlantCardsAndReply(
     console.log("[HAZEL] Step 7: Sending %d plant card(s)...", savedPlantIds.length);
     for (const plantId of savedPlantIds) {
       try {
-        const cardUrl = `https://garden-project-theta.vercel.app/api/card/${plantId}`;
+        const cardUrl = `${APP_URL}/api/card/${plantId}`;
         await sendImageMessage(phone, cardUrl);
         console.log("[HAZEL] Sent plant card for", plantId);
       } catch (cardErr) {
@@ -536,7 +572,7 @@ async function sendPlantCardsAndReply(
         .single();
 
       if (profile?.public_slug) {
-        const gardenUrl = `https://garden-project-theta.vercel.app/g/${profile.public_slug}`;
+        const gardenUrl = `${APP_URL}/g/${profile.public_slug}`;
         const name = profile?.name || "lovely";
         replyText += `\n\n${name}! I made this little garden journal for you, if you like!\n${gardenUrl}`;
         console.log("[HAZEL] Journal reveal appended for", name);
