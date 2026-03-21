@@ -76,12 +76,12 @@ async function processWebhook(body: WhatsAppWebhookBody): Promise<void> {
 
 // Acknowledgement phrases — keeps conversations feeling natural
 const IMAGE_ACKS = [
+  "Let me put my glasses on...",
   "Ooh let me have a look...",
-  "Ooh what's this...",
-  "Let me see...",
-  "Hmm let me take a closer look...",
-  "Oh hello, what have we here...",
-  "Hi! Let me put my glasses on...",
+  "Hold on, let me clean my glasses...",
+  "Where did I put my glasses...",
+  "Let me get a closer look...",
+  "One sec, just finding my glasses...",
 ];
 
 const TEXT_ACKS = [
