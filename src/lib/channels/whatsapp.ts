@@ -22,6 +22,44 @@ function getPhoneNumberId(): string {
 /**
  * Send read receipt (blue ticks) for a message.
  */
+/**
+ * Mark a message as read (blue ticks) AND show typing indicator.
+ * The typing indicator piggybacks on the read receipt — requires the
+ * inbound message_id, NOT the phone number.
+ * Typing lasts up to 25 seconds or until we send a message.
+ */
+export async function markReadAndType(messageId: string): Promise<void> {
+  const token = getAccessToken();
+  const phoneNumberId = getPhoneNumberId();
+
+  try {
+    const res = await fetch(`${GRAPH_API}/${phoneNumberId}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        status: "read",
+        message_id: messageId,
+        typing_indicator: {
+          type: "text",
+        },
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      console.error("[HAZEL] markReadAndType failed:", res.status, err);
+    }
+  } catch (e) {
+    console.error("[HAZEL] markReadAndType error:", e);
+  }
+}
+
+/**
+ * Mark a message as read (blue ticks) without typing indicator.
+ */
 export async function markRead(messageId: string): Promise<void> {
   const token = getAccessToken();
   const phoneNumberId = getPhoneNumberId();
@@ -38,40 +76,6 @@ export async function markRead(messageId: string): Promise<void> {
       message_id: messageId,
     }),
   }).catch(() => {});
-}
-
-/**
- * Show "typing..." indicator to the user. Lasts up to 25 seconds
- * or until a message is sent.
- */
-export async function showTyping(to: string): Promise<void> {
-  const token = getAccessToken();
-  const phoneNumberId = getPhoneNumberId();
-
-  try {
-    const res = await fetch(`${GRAPH_API}/${phoneNumberId}/messages`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        recipient_type: "individual",
-        to,
-        type: "typing",
-        typing: { action: "typing" },
-      }),
-    });
-    if (!res.ok) {
-      const err = await res.text();
-      console.error("[HAZEL] showTyping failed:", res.status, err);
-    } else {
-      console.log("[HAZEL] showTyping OK for", to);
-    }
-  } catch (e) {
-    console.error("[HAZEL] showTyping error:", e);
-  }
 }
 
 /**

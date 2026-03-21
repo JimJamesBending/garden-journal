@@ -6,8 +6,7 @@ import { saveMessage } from "@/lib/channels/save-message";
 import {
   sendTextMessage,
   sendImageMessage,
-  markRead,
-  showTyping,
+  markReadAndType,
   downloadMedia,
   uploadToCloudinary,
 } from "@/lib/channels/whatsapp";
@@ -107,15 +106,11 @@ async function processMessage(
 ): Promise<void> {
   const supabase = createAdminClient();
 
-  // Send read receipt + acknowledgement IMMEDIATELY — before any DB work
-  await markRead(message.id);
+  // Send read receipt + typing indicator IMMEDIATELY — before any DB work
+  await markReadAndType(message.id);
 
   if (message.type === "image") {
     await sendTextMessage(phone, pickRandom(IMAGE_ACKS));
-    await showTyping(phone);
-  } else if (message.type === "text") {
-    // For text, we don't know if they're new yet — send typing first, ack after resolve
-    await showTyping(phone);
   }
 
   try {
@@ -140,7 +135,6 @@ async function processMessage(
       const isShortMessage = textContent.trim().split(/\s+/).length <= 3;
       if (!isNew && !isShortMessage) {
         await sendTextMessage(phone, pickRandom(TEXT_ACKS));
-        await showTyping(phone);
       }
 
     } else if (message.type === "image" && message.image) {
@@ -203,10 +197,11 @@ async function processMessage(
       }
     }
 
-    // 6. Save identified plants — only high-confidence IDs (85%+)
+    // 6. Save identified plants — only high-confidence IDs (85%+), max 3
     const savedPlantIds: string[] = [];
-    if (hazelResponse.shouldSavePlants && hazelResponse.identifiedPlants.length > 0) {
-      for (const plant of hazelResponse.identifiedPlants) {
+    const plantsToSave = hazelResponse.identifiedPlants.slice(0, 3);
+    if (hazelResponse.shouldSavePlants && plantsToSave.length > 0) {
+      for (const plant of plantsToSave) {
         // Skip low-confidence guesses — don't pollute the garden with wrong IDs
         if (plant.confidence < 85) {
           console.log("[HAZEL] Skipping low-confidence plant:", plant.commonName, plant.confidence);
