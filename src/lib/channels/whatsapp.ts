@@ -3,6 +3,8 @@
  * Handles sending messages, downloading media, and uploading to Cloudinary.
  */
 
+import { debugLog } from "@/lib/debug-log";
+
 const GRAPH_API = "https://graph.facebook.com/v23.0";
 const CLOUDINARY_CLOUD = "davterbwx";
 const CLOUDINARY_PRESET = "garden_log";
@@ -20,20 +22,20 @@ function getPhoneNumberId(): string {
 }
 
 /**
- * Send read receipt (blue ticks) for a message.
- */
-/**
  * Mark a message as read (blue ticks) AND show typing indicator.
- * The typing indicator piggybacks on the read receipt — requires the
- * inbound message_id, NOT the phone number.
- * Typing lasts up to 25 seconds or until we send a message.
+ *
+ * STRATEGY CHANGE: We now send read receipt and typing indicator as
+ * TWO SEPARATE calls. Some evidence suggests combining them into one
+ * payload can cause the typing indicator to be silently dropped.
  */
 export async function markReadAndType(messageId: string): Promise<void> {
   const token = getAccessToken();
   const phoneNumberId = getPhoneNumberId();
+  const url = `${GRAPH_API}/${phoneNumberId}/messages`;
 
+  // Step 1: Send read receipt (blue ticks)
   try {
-    const res = await fetch(`${GRAPH_API}/${phoneNumberId}/messages`, {
+    const readRes = await fetch(url, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -43,56 +45,73 @@ export async function markReadAndType(messageId: string): Promise<void> {
         messaging_product: "whatsapp",
         status: "read",
         message_id: messageId,
-        typing_indicator: {
-          type: "text",
-        },
       }),
     });
-    const body = await res.text();
-    if (!res.ok) {
-      console.error("[HAZEL] markReadAndType failed:", res.status, body);
-    } else {
-      console.log("[HAZEL] markReadAndType OK:", res.status, body);
-    }
+    const readBody = await readRes.text();
+    console.log("[HAZEL] markRead:", readRes.status, readBody);
+    debugLog("mark_read", {
+      messageId,
+      status: readRes.status,
+      response: readBody,
+    });
   } catch (e) {
-    console.error("[HAZEL] markReadAndType error:", e);
+    console.error("[HAZEL] markRead error:", e);
+    debugLog("mark_read_error", { messageId, error: String(e) });
   }
+
+  // Step 2: Send typing indicator SEPARATELY
+  await showTyping(messageId);
 }
 
 /**
- * Show typing indicator only (no read receipt).
- * Use this for re-fires during long processing — the original
- * markReadAndType already sent the read receipt.
+ * Show typing indicator only.
+ * Sends as a dedicated call — NOT combined with read receipt.
  * Fire-and-forget: logs but never throws.
  */
 export async function showTyping(messageId: string): Promise<void> {
   const token = getAccessToken();
   const phoneNumberId = getPhoneNumberId();
+  const url = `${GRAPH_API}/${phoneNumberId}/messages`;
+
+  // The documented format: typing_indicator on a read-receipt call
+  const documentedPayload = {
+    messaging_product: "whatsapp",
+    status: "read",
+    message_id: messageId,
+    typing_indicator: {
+      type: "text",
+    },
+  };
 
   try {
-    const res = await fetch(`${GRAPH_API}/${phoneNumberId}/messages`, {
+    const res = await fetch(url, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        status: "read",
-        message_id: messageId,
-        typing_indicator: {
-          type: "text",
-        },
-      }),
+      body: JSON.stringify(documentedPayload),
     });
     const body = await res.text();
+
     if (!res.ok) {
-      console.error("[HAZEL] showTyping failed:", res.status, body);
+      console.error("[HAZEL] showTyping FAILED:", res.status, body);
     } else {
       console.log("[HAZEL] showTyping OK:", res.status, body);
     }
+
+    // Log full details to Supabase for debugging
+    debugLog("show_typing", {
+      messageId,
+      apiVersion: "v23.0",
+      status: res.status,
+      response: body,
+      payload: documentedPayload,
+      timestamp: new Date().toISOString(),
+    });
   } catch (e) {
     console.error("[HAZEL] showTyping error:", e);
+    debugLog("show_typing_error", { messageId, error: String(e) });
   }
 }
 

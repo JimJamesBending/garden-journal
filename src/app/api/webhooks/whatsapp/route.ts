@@ -23,6 +23,7 @@ import { askHazel } from "@/lib/ai/hazel";
 import { buildGardenContext } from "@/lib/ai/context";
 import { createPlant, createLog } from "@/lib/supabase/queries";
 import type { WhatsAppWebhookBody } from "@/lib/types";
+import { debugLog } from "@/lib/debug-log";
 
 /**
  * Extend the max execution time for this route.
@@ -90,12 +91,24 @@ async function processWebhook(body: WhatsAppWebhookBody): Promise<void> {
           const profileName =
             value.contacts?.[0]?.profile?.name || "Gardener";
 
+          // Log every incoming message for debugging
+          debugLog("webhook_message", {
+            messageId: message.id,
+            type: message.type,
+            from: phone,
+            profileName,
+            timestamp: message.timestamp,
+            hasText: !!message.text,
+            hasImage: !!message.image,
+          });
+
           await processMessage(phone, profileName, message);
         }
       }
     }
   } catch (err) {
     console.error("Webhook processing error:", err);
+    debugLog("webhook_error", { error: String(err) });
   }
 }
 
