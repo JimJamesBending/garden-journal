@@ -241,6 +241,19 @@ git add . && git commit -m "message" && git push origin master
 - [ ] GIF sending for richer responses (WhatsApp API supports it natively)
 - [ ] Proactive messages — seasonal tips, care reminders (requires Meta template approval)
 
+### Feature Ideas (User-Requested / To Be Offered)
+- [ ] Space planning — help users plan what to plant where in their garden/greenhouse
+- [ ] Yield calculations — estimate harvest yields based on plant count, variety, conditions
+- [ ] Weather warnings — local alerts based on user location (requires weather API integration)
+- [ ] Soil analysis from photos — use photo analysis to assess soil type/quality
+- [ ] Smart soil advice — ask about soil type when planting, calibrated to user experience level
+- [ ] Indoor plant support — extend beyond garden plants to houseplants
+- [ ] Growth charts — visual growth tracking overlaid on plant timeline
+- [ ] Prediction images — show what plants will look like at maturity (stylised or realistic renders)
+
+### Technical Notes
+- Gemini thinking uses split config: image messages get `thinkingBudget: 1024` (plant ID needs reasoning), text-only messages get `thinkingBudget: 0` (speed over reasoning for chat)
+
 ---
 
 ## Legal (UK)

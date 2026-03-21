@@ -220,12 +220,16 @@ export async function askHazel(input: HazelInput): Promise<HazelResponse> {
     text: `${contextBlock}\n\nUser message: ${userMessage}`,
   });
 
+  // Use thinking for image messages (plant ID needs reasoning),
+  // skip it for text-only (chat responses need speed, not reasoning chains)
+  const hasImages = (imageData && imageData.length > 0) || (imageUrls && imageUrls.length > 0);
+
   const result = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     config: {
       systemInstruction: HAZEL_SYSTEM_PROMPT,
       thinkingConfig: {
-        thinkingBudget: 0, // Disable thinking — we need speed, not reasoning chains
+        thinkingBudget: hasImages ? 1024 : 0,
       },
     },
     contents: contentParts,
