@@ -87,10 +87,12 @@ src/
       whatsapp.ts                 — WhatsApp API: send text/image, markReadAndType, download media
       resolve-user.ts             — Find or create user from phone number
       save-message.ts             — Save messages to conversation
+      image-batcher.ts            — Postgres-backed batch queue for multi-image handling
     supabase/
       admin.ts                    — Supabase admin client (bypasses RLS)
       queries.ts                  — All database queries (createPlant, createLog, etc.)
     cloudinary.ts                 — URL transform helpers
+    plant-impact.ts               — Ecological impact lookup (35 plants, grades, season/age scaling)
     types.ts                      — TypeScript interfaces
 scripts/
   wipe-user.sh                    — Wipe user data for testing
@@ -220,9 +222,14 @@ git add . && git commit -m "message" && git push origin master
 ## Pending / Next Steps
 
 ### Immediate
+- [x] Fix garden journal 404 (profiles missing public_slug/phone columns — SQL migration done)
+- [x] Fix duplicate journal reveal (atomic `try_reveal_journal` RPC)
+- [x] Fix multi-image flooding (Postgres batch queue with advisory locks)
+- [x] Plant impact cards — ecological stats on plant cards (bees, butterflies, O₂, grade)
 - [ ] Test typing indicator with corrected API format (markReadAndType)
 - [ ] Test golden path end-to-end (fresh user -> plant 1 -> plant 2 -> journal reveal)
-- [ ] Test plant card redesign (800x500, serif font, stats, no emoji)
+- [ ] Test multi-image batching (2-5 photos rapid-fire -> single response)
+- [ ] Test plant card impact stats render correctly
 
 ### Short Term
 - [ ] Duplicate plant detection — nickname system ("greenhouse tomato" vs "back door tomato")
@@ -242,6 +249,8 @@ git add . && git commit -m "message" && git push origin master
 - [ ] Proactive messages — seasonal tips, care reminders (requires Meta template approval)
 
 ### Feature Ideas (User-Requested / To Be Offered)
+- [ ] **Spaces** — Gardens are made of spaces: shed, greenhouse, windowsill, raised bed, border, etc. Indoor and outdoor. Use spaces to create collections for richer context. "Homes are basically gardens — outside and inside." When user mentions a shed or windowsill, that's a space.
+- [ ] **Bulk adding** — Once user is hooked, entice with bulk plant adding (e.g. "Send me all your plants!")
 - [ ] Space planning — help users plan what to plant where in their garden/greenhouse
 - [ ] Yield calculations — estimate harvest yields based on plant count, variety, conditions
 - [ ] Weather warnings — local alerts based on user location (requires weather API integration)

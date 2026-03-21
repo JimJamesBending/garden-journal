@@ -34,11 +34,15 @@ export default async function GardenPage({ params }: GardenPageProps) {
   const supabase = createAdminClient();
 
   // Fetch profile by slug
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("id, name")
     .eq("public_slug", slug)
     .single();
+
+  if (profileError) {
+    console.error("[GARDEN PAGE] Profile lookup failed for slug:", slug, profileError);
+  }
 
   if (!profile) {
     notFound();

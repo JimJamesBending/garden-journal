@@ -69,7 +69,7 @@ export async function resolveWhatsAppUser(
 
   // Set public slug on profile
   const slug = `g-${crypto.randomBytes(4).toString("hex")}`;
-  await supabase
+  const { error: profileUpdateError } = await supabase
     .from("profiles")
     .update({
       public_slug: slug,
@@ -77,6 +77,10 @@ export async function resolveWhatsAppUser(
       name: profileName || "Gardener",
     })
     .eq("id", userId);
+
+  if (profileUpdateError) {
+    console.error("[HAZEL] Failed to update profile with slug/phone:", profileUpdateError);
+  }
 
   // Get the auto-created garden
   const { data: garden } = await supabase

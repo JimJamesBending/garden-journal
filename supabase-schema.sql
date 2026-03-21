@@ -13,10 +13,15 @@ create table public.profiles (
   id uuid references auth.users(id) on delete cascade primary key,
   email text not null,
   name text default '',
+  phone text,
+  public_slug text unique,
+  journal_revealed boolean default false,
   plan text default 'free' check (plan in ('free', 'grower', 'pro')),
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
+create index idx_profiles_slug on public.profiles(public_slug);
 
 -- Auto-create profile on signup
 create or replace function public.handle_new_user()
@@ -57,6 +62,51 @@ $$ language plpgsql security definer;
 create trigger on_profile_created
   after insert on public.profiles
   for each row execute function public.handle_new_profile();
+
+-- ============================================
+-- CONVERSATIONS TABLE
+-- ============================================
+create table public.conversations (
+  id uuid default uuid_generate_v4() primary key,
+  profile_id uuid references public.profiles(id) on delete cascade not null,
+  channel text not null default 'whatsapp',
+  channel_user_id text not null,
+  last_message_at timestamptz default now(),
+  created_at timestamptz default now()
+);
+
+create index idx_conversations_channel_user on public.conversations(channel, channel_user_id);
+
+-- ============================================
+-- MESSAGES TABLE
+-- ============================================
+create table public.messages (
+  id uuid default uuid_generate_v4() primary key,
+  conversation_id uuid references public.conversations(id) on delete cascade not null,
+  role text not null check (role in ('user', 'assistant')),
+  content text default '',
+  media_urls text[] default '{}',
+  metadata jsonb default '{}'::jsonb,
+  created_at timestamptz default now()
+);
+
+create index idx_messages_conversation on public.messages(conversation_id);
+
+-- ============================================
+-- PENDING IMAGES TABLE (batch queue for multi-image handling)
+-- ============================================
+create table public.pending_images (
+  id uuid default uuid_generate_v4() primary key,
+  phone text not null,
+  profile_name text not null default 'Gardener',
+  whatsapp_message_id text not null,
+  media_id text not null,
+  mime_type text not null default 'image/jpeg',
+  caption text default '',
+  created_at timestamptz default now()
+);
+
+create index idx_pending_images_phone on public.pending_images(phone, created_at);
 
 -- ============================================
 -- PLANTS TABLE
