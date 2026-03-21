@@ -206,7 +206,9 @@ async function processMessage(
     // 8. Build the reply
     let replyText = hazelResponse.text;
 
-    if (isNew) {
+    // Append garden URL when plants are identified or on first message
+    const plantsWereSaved = hazelResponse.shouldSavePlants && hazelResponse.identifiedPlants.length > 0;
+    if (isNew || plantsWereSaved) {
       const { data: profile } = await supabase
         .from("profiles")
         .select("public_slug")
@@ -215,7 +217,12 @@ async function processMessage(
 
       if (profile?.public_slug) {
         const gardenUrl = `https://garden-project-theta.vercel.app/g/${profile.public_slug}`;
-        replyText += `\n\nYour garden page is ready: ${gardenUrl}`;
+        if (plantsWereSaved) {
+          const plantNames = hazelResponse.identifiedPlants.map(p => p.commonName).join(", ");
+          replyText += `\n\nI've added ${plantNames} to your garden journal: ${gardenUrl}`;
+        } else {
+          replyText += `\n\nYour garden page is ready: ${gardenUrl}`;
+        }
       }
     }
 
