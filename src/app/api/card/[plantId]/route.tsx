@@ -118,12 +118,13 @@ export async function GET(
   const validCategory = (["flower", "herb", "vegetable", "fruit"].includes(plant.category)
     ? plant.category
     : "flower") as "flower" | "herb" | "vegetable" | "fruit";
+  // Don't pass days — show seasonal potential, not age-scaled.
+  // A brand-new lavender showing "~0 bees" looks wrong on the card.
   const impact = getPlantImpact(
     plant.common_name,
     plant.latin_name || "",
     validCategory,
-    "outdoor",
-    days
+    "outdoor"
   );
 
   // Build the text that needs the serif font (for subset loading)

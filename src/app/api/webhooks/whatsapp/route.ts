@@ -323,11 +323,22 @@ async function processBatchedImages(
     const { gardenId, conversationId } = resolved;
     console.log("[HAZEL] Step 1 done: user resolved, %d images downloaded", mediaResults.length);
 
-    // Step 2: Prepare image data for Gemini + start Cloudinary uploads
-    const rawImageData = mediaResults.map((r) => ({
-      base64: r.buffer.toString("base64"),
-      mimeType: r.mimeType,
-    }));
+    // Step 2: Prepare image data for Gemini (downscaled) + start Cloudinary uploads (full size)
+    const rawImageData = await Promise.all(
+      mediaResults.map(async (r) => {
+        try {
+          const sharp = (await import("sharp")).default;
+          const resized = await sharp(r.buffer)
+            .resize({ width: 800, withoutEnlargement: true })
+            .jpeg({ quality: 80 })
+            .toBuffer();
+          return { base64: resized.toString("base64"), mimeType: "image/jpeg" };
+        } catch {
+          // Fallback: use original if sharp fails
+          return { base64: r.buffer.toString("base64"), mimeType: r.mimeType };
+        }
+      })
+    );
 
     const cloudinaryPromises = mediaResults.map((r) =>
       uploadToCloudinary(r.buffer, r.mimeType).catch((err) => {
