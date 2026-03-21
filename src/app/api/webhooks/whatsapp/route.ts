@@ -119,55 +119,51 @@ async function processMessage(
   }
 
   try {
-    // 1. Resolve user (find or create)
-    console.log("[HAZEL] Step 1: Resolving user", phone, profileName);
+    let textContent = "";
     let gardenId: string;
     let conversationId: string;
     let isNew: boolean;
-    try {
-      const resolved = await resolveWhatsAppUser(supabase, phone, profileName);
-      gardenId = resolved.gardenId;
-      conversationId = resolved.conversationId;
-      isNew = resolved.isNew;
-      console.log("[HAZEL] Step 1 done:", { gardenId, conversationId, isNew });
-    } catch (stepErr) {
-      console.error("[HAZEL] Step 1 FAILED:", stepErr instanceof Error ? stepErr.message + "\n" + stepErr.stack : String(stepErr));
-      throw stepErr;
-    }
-
-    // 2. Extract text and media
-    let textContent = "";
     const imageUrls: string[] = [];
     const rawImageData: { base64: string; mimeType: string }[] = [];
+    let cloudinaryPromise: Promise<string> | null = null;
 
     if (message.type === "text" && message.text) {
       textContent = message.text.body;
 
+      // Resolve user
+      const resolved = await resolveWhatsAppUser(supabase, phone, profileName);
+      gardenId = resolved.gardenId;
+      conversationId = resolved.conversationId;
+      isNew = resolved.isNew;
+
       // Send split ack for returning users with longer messages
-      // Skip for short greetings — they deserve a fast reply
       const isShortMessage = textContent.trim().split(/\s+/).length <= 3;
       if (!isNew && !isShortMessage) {
         await sendTextMessage(phone, pickRandom(TEXT_ACKS));
         await showTyping(phone);
       }
+
     } else if (message.type === "image" && message.image) {
       textContent = message.image.caption || "Sent a photo";
 
-      try {
-        const { buffer, mimeType } = await downloadMedia(message.image.id);
+      // Download image + resolve user IN PARALLEL
+      const [mediaResult, resolved] = await Promise.all([
+        downloadMedia(message.image.id),
+        resolveWhatsAppUser(supabase, phone, profileName),
+      ]);
+      gardenId = resolved.gardenId;
+      conversationId = resolved.conversationId;
+      isNew = resolved.isNew;
 
-        // Keep raw buffer for Gemini (skip re-download) + upload to Cloudinary in parallel
-        rawImageData.push({
-          base64: buffer.toString("base64"),
-          mimeType,
-        });
+      // Keep raw buffer for Gemini
+      rawImageData.push({
+        base64: mediaResult.buffer.toString("base64"),
+        mimeType: mediaResult.mimeType,
+      });
 
-        const cloudinaryUrl = await uploadToCloudinary(buffer, mimeType);
-        imageUrls.push(cloudinaryUrl);
-      } catch (mediaErr) {
-        console.error("[HAZEL] Step 2 media FAILED:", mediaErr instanceof Error ? mediaErr.message : String(mediaErr));
-        throw mediaErr;
-      }
+      // Start Cloudinary upload — runs in parallel with Gemini, resolved later
+      cloudinaryPromise = uploadToCloudinary(mediaResult.buffer, mediaResult.mimeType);
+
     } else {
       await sendTextMessage(
         phone,
@@ -175,29 +171,15 @@ async function processMessage(
       );
       return;
     }
-    console.log("[HAZEL] Step 2 done: text =", textContent);
 
-    // 3. Save user message
-    try {
-      await saveMessage(supabase, conversationId, "user", textContent, imageUrls);
-      console.log("[HAZEL] Step 3 done: message saved");
-    } catch (stepErr) {
-      console.error("[HAZEL] Step 3 FAILED:", stepErr instanceof Error ? stepErr.message + "\n" + stepErr.stack : String(stepErr));
-      throw stepErr;
-    }
+    // Build context + save user message IN PARALLEL
+    const [context] = await Promise.all([
+      buildGardenContext(supabase, gardenId, conversationId),
+      saveMessage(supabase, conversationId, "user", textContent, imageUrls),
+    ]);
 
-    // 4. Build garden context
-    let context;
-    try {
-      context = await buildGardenContext(supabase, gardenId, conversationId);
-      console.log("[HAZEL] Step 4 done: plantCount =", context.plantCount, "isNew =", context.isNewUser);
-    } catch (stepErr) {
-      console.error("[HAZEL] Step 4 FAILED:", stepErr instanceof Error ? stepErr.message + "\n" + stepErr.stack : String(stepErr));
-      throw stepErr;
-    }
-
-    // 5. Ask Hazel
-    console.log("[HAZEL] Step 5: Asking Gemini...");
+    // Ask Hazel (the main bottleneck — Gemini call)
+    console.log("[HAZEL] Asking Gemini...");
     let hazelResponse;
     try {
       hazelResponse = await askHazel({
@@ -205,10 +187,20 @@ async function processMessage(
         imageData: rawImageData.length > 0 ? rawImageData : undefined,
         gardenContext: context,
       });
-      console.log("[HAZEL] Step 5 done: length =", hazelResponse.text.length);
+      console.log("[HAZEL] Gemini done: length =", hazelResponse.text.length);
     } catch (stepErr) {
-      console.error("[HAZEL] Step 5 FAILED:", stepErr instanceof Error ? stepErr.message + "\n" + stepErr.stack : String(stepErr));
+      console.error("[HAZEL] Gemini FAILED:", stepErr instanceof Error ? stepErr.message + "\n" + stepErr.stack : String(stepErr));
       throw stepErr;
+    }
+
+    // Resolve Cloudinary upload if it was started (should be done by now)
+    if (cloudinaryPromise) {
+      try {
+        const cloudinaryUrl = await cloudinaryPromise;
+        imageUrls.push(cloudinaryUrl);
+      } catch (err) {
+        console.error("[HAZEL] Cloudinary upload failed:", err);
+      }
     }
 
     // 6. Save identified plants — only high-confidence IDs (85%+)
