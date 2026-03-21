@@ -43,6 +43,42 @@ export async function markTyping(to: string, messageId: string): Promise<void> {
 }
 
 /**
+ * Send an image message to a WhatsApp user.
+ * The image must be a publicly accessible URL.
+ */
+export async function sendImageMessage(
+  to: string,
+  imageUrl: string,
+  caption?: string
+): Promise<void> {
+  const token = getAccessToken();
+  const phoneNumberId = getPhoneNumberId();
+
+  const imagePayload: { link: string; caption?: string } = { link: imageUrl };
+  if (caption) imagePayload.caption = caption;
+
+  const res = await fetch(`${GRAPH_API}/${phoneNumberId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to,
+      type: "image",
+      image: imagePayload,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    console.error("WhatsApp image send failed:", err);
+    throw new Error(`WhatsApp image send failed: ${res.status}`);
+  }
+}
+
+/**
  * Send a text message to a WhatsApp user.
  */
 export async function sendTextMessage(to: string, body: string): Promise<void> {

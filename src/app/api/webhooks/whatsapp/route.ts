@@ -5,6 +5,7 @@ import { resolveWhatsAppUser } from "@/lib/channels/resolve-user";
 import { saveMessage } from "@/lib/channels/save-message";
 import {
   sendTextMessage,
+  sendImageMessage,
   markTyping,
   downloadMedia,
   uploadToCloudinary,
@@ -164,7 +165,8 @@ async function processMessage(
       throw stepErr;
     }
 
-    // 6. Save identified plants
+    // 6. Save identified plants and collect IDs for card generation
+    const savedPlantIds: string[] = [];
     if (hazelResponse.shouldSavePlants && hazelResponse.identifiedPlants.length > 0) {
       for (const plant of hazelResponse.identifiedPlants) {
         try {
@@ -178,6 +180,7 @@ async function processMessage(
             location: "outdoor",
             notes: plant.aiNotes,
           });
+          savedPlantIds.push(createdPlant.id);
 
           if (imageUrls.length > 0) {
             await createLog(supabase, gardenId, {
@@ -203,12 +206,25 @@ async function processMessage(
       console.error("[HAZEL] Step 7 FAILED (non-fatal):", String(stepErr));
     }
 
-    // 8. Build the reply
+    // 8. Send plant card image(s) if plants were identified
+    const plantsWereSaved = savedPlantIds.length > 0;
+    if (plantsWereSaved) {
+      for (const plantId of savedPlantIds) {
+        try {
+          const cardUrl = `https://garden-project-theta.vercel.app/api/card/${plantId}`;
+          await sendImageMessage(phone, cardUrl);
+          console.log("[HAZEL] Sent plant card for", plantId);
+        } catch (cardErr) {
+          console.error("[HAZEL] Failed to send plant card:", cardErr);
+        }
+      }
+    }
+
+    // 9. Build and send the text reply
     let replyText = hazelResponse.text;
 
-    // Append garden URL when plants are identified or on first message
-    const plantsWereSaved = hazelResponse.shouldSavePlants && hazelResponse.identifiedPlants.length > 0;
-    if (isNew || plantsWereSaved) {
+    // Append garden URL only when plants were saved (not on empty first message)
+    if (plantsWereSaved) {
       const { data: profile } = await supabase
         .from("profiles")
         .select("public_slug")
@@ -217,16 +233,11 @@ async function processMessage(
 
       if (profile?.public_slug) {
         const gardenUrl = `https://garden-project-theta.vercel.app/g/${profile.public_slug}`;
-        if (plantsWereSaved) {
-          const plantNames = hazelResponse.identifiedPlants.map(p => p.commonName).join(", ");
-          replyText += `\n\nI've added ${plantNames} to your garden journal: ${gardenUrl}`;
-        } else {
-          replyText += `\n\nYour garden page is ready: ${gardenUrl}`;
-        }
+        const plantNames = hazelResponse.identifiedPlants.map(p => p.commonName).join(", ");
+        replyText += `\n\nI've added ${plantNames} to your garden journal: ${gardenUrl}`;
       }
     }
 
-    // 9. Send reply via WhatsApp
     console.log("[HAZEL] Step 9: Sending reply, length =", replyText.length);
     await sendTextMessage(phone, replyText);
     console.log("[HAZEL] DONE — reply sent successfully");
