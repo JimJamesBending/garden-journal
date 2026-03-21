@@ -380,20 +380,25 @@ language plpgsql
 security definer
 as $$
 declare
-  existing_count int;
+  has_existing boolean;
 begin
-  -- Lock any existing rows for this phone to prevent race conditions
-  select count(*) into existing_count
+  -- Lock existing rows for this phone to prevent race conditions.
+  -- Use PERFORM (discards result) to acquire FOR UPDATE locks without aggregation,
+  -- which Postgres does not allow with FOR UPDATE.
+  perform 1
   from public.pending_images
   where phone = p_phone
   for update;
+
+  -- Check if any rows existed BEFORE our insert
+  has_existing := found;
 
   -- Insert the new pending image
   insert into public.pending_images (phone, profile_name, whatsapp_message_id, media_id, mime_type, caption)
   values (p_phone, p_profile_name, p_message_id, p_media_id, p_mime_type, p_caption);
 
   -- Return true if this was the first image (no existing rows before insert)
-  return existing_count = 0;
+  return not has_existing;
 end;
 $$;
 
