@@ -48,20 +48,30 @@ export async function showTyping(to: string): Promise<void> {
   const token = getAccessToken();
   const phoneNumberId = getPhoneNumberId();
 
-  await fetch(`${GRAPH_API}/${phoneNumberId}/messages`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      recipient_type: "individual",
-      to,
-      type: "typing",
-      typing: { action: "typing" },
-    }),
-  }).catch(() => {});
+  try {
+    const res = await fetch(`${GRAPH_API}/${phoneNumberId}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to,
+        type: "typing",
+        typing: { action: "typing" },
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      console.error("[HAZEL] showTyping failed:", res.status, err);
+    } else {
+      console.log("[HAZEL] showTyping OK for", to);
+    }
+  } catch (e) {
+    console.error("[HAZEL] showTyping error:", e);
+  }
 }
 
 /**
