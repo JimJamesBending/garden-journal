@@ -295,7 +295,10 @@ async function processBatchedImages(
   replyToMessageId?: string
 ): Promise<void> {
   const processingStartedAt = new Date();
-  const batchMsgId = batch[0].whatsapp_message_id;
+  // Use the LAST message ID in the batch — its typing window is most recent.
+  // The first message's typing window is likely dead by the time we claim the batch.
+  // Also prefer replyToMessageId (the claiming invocation's msg ID) as fallback.
+  const batchMsgId = batch[batch.length - 1].whatsapp_message_id;
   // Pick ack phrase now — will be prepended to the final response
   const ackPhrase = pickRandom(IMAGE_ACKS);
   let progressSent = false;
@@ -362,9 +365,12 @@ async function processBatchedImages(
     console.log("[HAZEL] Step 2 done: context built (plants=%d, isNew=%s)", context.plantCount, context.isNewUser);
 
     // Step 4: ONE Gemini call with ALL images
-    // Typing keepalive runs before any outbound message — so it actually works!
-    console.log("[HAZEL] Step 3: Asking Gemini... (%d images, textLen=%d)", rawImageData.length, combinedCaption.length);
-    const stopTyping = startTypingKeepalive(batchMsgId);
+    // Typing keepalive: use the claiming invocation's message ID (replyToMessageId)
+    // because its typing window was just opened by markReadAndType().
+    // Fall back to last batch message ID if somehow missing.
+    const typingMsgId = replyToMessageId || batchMsgId;
+    console.log("[HAZEL] Step 3: Asking Gemini... (%d images, textLen=%d, typingOn=%s)", rawImageData.length, combinedCaption.length, typingMsgId.slice(-8));
+    const stopTyping = startTypingKeepalive(typingMsgId);
     let hazelResponse;
     try {
       hazelResponse = await askHazel({
