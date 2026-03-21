@@ -66,35 +66,21 @@ export async function markReadAndType(messageId: string): Promise<void> {
 /**
  * Show typing indicator.
  *
- * Uses the WhatsApp Cloud API typing indicator format — always references
- * the inbound message_id. After sending an outgoing message (e.g. the ack),
- * a small delay is needed before re-sending the typing indicator, because
- * the outgoing message cancels the previous typing state.
+ * IMPORTANT: WhatsApp typing indicator ONLY works ONCE per inbound message,
+ * BEFORE you send any reply. After any outbound message, the API returns
+ * 200 OK but silently ignores the typing request. This is an undocumented
+ * limitation confirmed via extensive testing and community research.
  *
- * If `delayMs` is provided, waits that many milliseconds before firing.
- * This is critical for the post-ack typing indicator to work reliably.
+ * Therefore: call this ONLY before sending your first reply. Do not call
+ * it between outbound messages — it will appear to succeed but do nothing.
  *
  * Fire-and-forget: logs but never throws.
  */
-export async function showTyping(
-  messageId: string,
-  phone?: string,
-  delayMs?: number
-): Promise<void> {
-  // Optional delay — used after sending an outgoing message to let
-  // WhatsApp finish processing the outbound before we re-assert typing
-  if (delayMs && delayMs > 0) {
-    await new Promise((r) => setTimeout(r, delayMs));
-  }
-
+export async function showTyping(messageId: string): Promise<void> {
   const token = getAccessToken();
   const phoneNumberId = getPhoneNumberId();
   const url = `${GRAPH_API}/${phoneNumberId}/messages`;
 
-  // The ONLY correct format per WhatsApp Cloud API docs:
-  // status: "read" + message_id + typing_indicator
-  // No "to" field, no "type" field, no "recipient_type" — those are for
-  // sending messages, not for typing indicators.
   const payload = {
     messaging_product: "whatsapp",
     status: "read",
@@ -121,29 +107,27 @@ export async function showTyping(
 
     debugLog("show_typing", {
       messageId,
-      phone: phone || null,
-      delayMs: delayMs || 0,
       apiVersion: "v23.0",
       status: res.status,
       ok: res.ok,
       response: body,
-      payload: JSON.stringify(payload),
       timestamp: new Date().toISOString(),
     });
   } catch (e) {
     console.error("[HAZEL] showTyping error:", e);
-    debugLog("show_typing_error", { messageId, phone: phone || null, error: String(e) });
+    debugLog("show_typing_error", { messageId, error: String(e) });
   }
 }
 
 /**
  * Keeps typing indicator alive during long operations.
  * Re-fires every 20 seconds (typing expires after 25s).
+ * Only works BEFORE any outbound message has been sent.
  * Returns a cancel function.
  */
-export function startTypingKeepalive(messageId: string, phone?: string): () => void {
+export function startTypingKeepalive(messageId: string): () => void {
   const interval = setInterval(() => {
-    showTyping(messageId, phone).catch(() => {});
+    showTyping(messageId).catch(() => {});
   }, 20_000);
 
   return () => clearInterval(interval);
