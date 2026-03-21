@@ -26,6 +26,7 @@ export interface GardenContext {
   plantCount: number;
   userMessageCount: number;
   isNewUser: boolean;
+  gardenUrl: string | null;
   conversationHistory: Array<{
     role: "user" | "assistant";
     content: string;
@@ -62,6 +63,26 @@ export async function buildGardenContext(
     .select("name, type, plant_positions")
     .eq("garden_id", gardenId)
     .order("created_at");
+
+  // Fetch profile slug for garden URL
+  const { data: garden } = await supabase
+    .from("gardens")
+    .select("owner_id")
+    .eq("id", gardenId)
+    .single();
+
+  let gardenUrl: string | null = null;
+  if (garden?.owner_id) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("public_slug")
+      .eq("id", garden.owner_id)
+      .single();
+    if (profile?.public_slug) {
+      const appUrl = process.env.APP_URL || "https://garden-project-theta.vercel.app";
+      gardenUrl = `${appUrl}/g/${profile.public_slug}`;
+    }
+  }
 
   // Fetch last 10 messages for conversation context + count user messages
   const [{ data: messages }, { count: userMsgCount }] = await Promise.all([
@@ -128,6 +149,7 @@ export async function buildGardenContext(
     plantCount: mappedPlants.length,
     userMessageCount: userMsgCount || 0,
     isNewUser: mappedPlants.length === 0 && conversationHistory.length === 0,
+    gardenUrl,
     conversationHistory,
   };
 }
