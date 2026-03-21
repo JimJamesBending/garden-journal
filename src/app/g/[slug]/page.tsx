@@ -62,7 +62,7 @@ export async function generateMetadata({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("name")
+    .select("id, name")
     .eq("public_slug", slug)
     .single();
 
@@ -70,9 +70,39 @@ export async function generateMetadata({
     return { title: "Garden Not Found" };
   }
 
+  // Count plants for the description
+  const { count: plantCount } = await supabase
+    .from("plants")
+    .select("id", { count: "exact", head: true })
+    .eq(
+      "garden_id",
+      (
+        await supabase
+          .from("gardens")
+          .select("id")
+          .eq("owner_id", profile.id)
+          .single()
+      ).data?.id || ""
+    );
+
+  const appUrl =
+    process.env.APP_URL || "https://garden-project-theta.vercel.app";
+  const title = `${profile.name}'s Garden`;
+  const description =
+    plantCount && plantCount > 0
+      ? `${plantCount} ${plantCount === 1 ? "plant" : "plants"} growing with Hazel`
+      : `${profile.name}'s garden, grown with help from Hazel.`;
+
   return {
-    title: `${profile.name}'s Garden`,
-    description: `${profile.name}'s garden, grown with help from Hazel.`,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `${appUrl}/g/${slug}`,
+      siteName: "Hazel",
+      type: "website",
+    },
   };
 }
 

@@ -212,11 +212,13 @@ export async function sendTextMessage(
   const token = getAccessToken();
   const phoneNumberId = getPhoneNumberId();
 
+  // Enable link preview when the message contains a URL
+  const hasUrl = /https?:\/\//.test(body);
   const payload: Record<string, unknown> = {
     messaging_product: "whatsapp",
     to,
     type: "text",
-    text: { body },
+    text: { body, ...(hasUrl && { preview_url: true }) },
   };
 
   // If replying to a specific message, add context
