@@ -1,11 +1,90 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { thumbnail } from "@/lib/cloudinary";
+import { thumbnail, heroImage } from "@/lib/cloudinary";
+import type { SpaceType } from "@/lib/types";
 
 interface GardenPageProps {
   params: Promise<{ slug: string }>;
 }
+
+// --- Space display helpers ---
+
+const SPACE_ICONS: Record<string, string> = {
+  greenhouse: "\u{1F33F}",
+  "cold-frame": "\u{1F9CA}",
+  windowsill: "\u{1FA9F}",
+  "raised-bed": "\u{1F33E}",
+  polytunnel: "\u{26FA}",
+  shelf: "\u{1F4DA}",
+  "garden-bed": "\u{1F490}",
+  shed: "\u{1F6D6}",
+  patio: "\u{2600}",
+  balcony: "\u{1F3D7}",
+  allotment: "\u{1F9D1}\u{200D}\u{1F33E}",
+  "front-garden": "\u{1F3E1}",
+  "back-garden": "\u{1F3E0}",
+};
+
+const SPACE_LABELS: Record<string, string> = {
+  greenhouse: "Greenhouse",
+  "cold-frame": "Cold Frame",
+  windowsill: "Windowsill",
+  "raised-bed": "Raised Bed",
+  polytunnel: "Polytunnel",
+  shelf: "Shelf",
+  "garden-bed": "Garden Bed",
+  shed: "Shed",
+  patio: "Patio",
+  balcony: "Balcony",
+  allotment: "Allotment",
+  "front-garden": "Front Garden",
+  "back-garden": "Back Garden",
+};
+
+function spaceIcon(type: string): string {
+  return SPACE_ICONS[type] || "\u{1F331}";
+}
+
+function spaceLabel(type: string): string {
+  return SPACE_LABELS[type] || type;
+}
+
+// --- Category display ---
+
+const CATEGORY_ICONS: Record<string, string> = {
+  flower: "\u{1F33A}",
+  vegetable: "\u{1F966}",
+  fruit: "\u{1F353}",
+  herb: "\u{1F33F}",
+};
+
+// --- Types for raw DB rows ---
+
+interface DbPlant {
+  id: string;
+  common_name: string;
+  latin_name: string | null;
+  category: string | null;
+  notes: string | null;
+  created_at: string | null;
+}
+
+interface DbSpace {
+  id: string;
+  name: string;
+  type: SpaceType;
+  description: string | null;
+  background_image_url: string | null;
+  plant_positions: Array<{ plantId: string; x: number; y: number }>;
+}
+
+interface PlantLog {
+  cloudinary_url: string;
+  caption: string;
+}
+
+// --- Metadata ---
 
 export async function generateMetadata({
   params,
@@ -24,16 +103,18 @@ export async function generateMetadata({
   }
 
   return {
-    title: `${profile.name}'s Garden — Hazel`,
-    description: `A garden grown with help from Hazel, your AI gardening companion.`,
+    title: `${profile.name}'s Garden`,
+    description: `${profile.name}'s garden, grown with help from Hazel.`,
   };
 }
+
+// --- Page ---
 
 export default async function GardenPage({ params }: GardenPageProps) {
   const { slug } = await params;
   const supabase = createAdminClient();
 
-  // Fetch profile by slug
+  // Fetch profile
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("id, name")
@@ -41,12 +122,9 @@ export default async function GardenPage({ params }: GardenPageProps) {
     .single();
 
   if (profileError) {
-    console.error("[GARDEN PAGE] Profile lookup failed for slug:", slug, profileError);
+    console.error("[GARDEN PAGE] Profile lookup failed:", slug, profileError);
   }
-
-  if (!profile) {
-    notFound();
-  }
+  if (!profile) notFound();
 
   // Fetch garden
   const { data: garden } = await supabase
@@ -55,22 +133,28 @@ export default async function GardenPage({ params }: GardenPageProps) {
     .eq("owner_id", profile.id)
     .single();
 
-  if (!garden) {
-    notFound();
-  }
+  if (!garden) notFound();
 
-  // Fetch plants with their latest log entry photo
-  const { data: plants } = await supabase
-    .from("plants")
-    .select(
-      "id, common_name, latin_name, category, notes, created_at"
-    )
-    .eq("garden_id", garden.id)
-    .order("created_at", { ascending: false });
+  // Fetch plants, spaces, and logs in parallel
+  const [plantsResult, spacesResult] = await Promise.all([
+    supabase
+      .from("plants")
+      .select("id, common_name, latin_name, category, notes, created_at")
+      .eq("garden_id", garden.id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("spaces")
+      .select("id, name, type, description, background_image_url, plant_positions")
+      .eq("garden_id", garden.id)
+      .order("created_at", { ascending: true }),
+  ]);
+
+  const plants: DbPlant[] = plantsResult.data || [];
+  const spaces: DbSpace[] = spacesResult.data || [];
 
   // Fetch latest log entry per plant (for photos)
-  const plantIds = (plants || []).map((p) => p.id);
-  let logsByPlant: Record<string, { cloudinary_url: string; caption: string }> = {};
+  const plantIds = plants.map((p) => p.id);
+  const logsByPlant: Record<string, PlantLog> = {};
 
   if (plantIds.length > 0) {
     const { data: logs } = await supabase
@@ -79,7 +163,6 @@ export default async function GardenPage({ params }: GardenPageProps) {
       .in("plant_id", plantIds)
       .order("date", { ascending: false });
 
-    // Take first log per plant (most recent)
     for (const log of logs || []) {
       if (log.plant_id && !logsByPlant[log.plant_id]) {
         logsByPlant[log.plant_id] = {
@@ -90,96 +173,183 @@ export default async function GardenPage({ params }: GardenPageProps) {
     }
   }
 
-  const plantCount = plants?.length || 0;
+  // Build a plant lookup and track which plants are assigned to spaces
+  const plantMap = new Map<string, DbPlant>();
+  for (const p of plants) {
+    plantMap.set(p.id, p);
+  }
+
+  const assignedPlantIds = new Set<string>();
+  for (const space of spaces) {
+    for (const pos of space.plant_positions || []) {
+      assignedPlantIds.add(pos.plantId);
+    }
+  }
+
+  // Unassigned plants go into "Around the Garden"
+  const unassignedPlants = plants.filter((p) => !assignedPlantIds.has(p.id));
+
+  const plantCount = plants.length;
+  const spaceCount = spaces.length;
   const whatsappNumber = process.env.NEXT_PUBLIC_HAZEL_PHONE_NUMBER || "";
   const whatsappLink = `https://wa.me/${whatsappNumber.replace(/\+/g, "")}?text=Hello%20Hazel`;
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="bg-garden-greenLight border-b border-garden-border px-6 py-8">
-        <div className="max-w-2xl mx-auto text-center">
-          <h1 className="text-heading-lg text-garden-text mb-2">
+    <div className="min-h-screen bg-garden-cream">
+      {/* Hero */}
+      <header className="bg-garden-greenLight border-b border-garden-border">
+        <div className="max-w-3xl mx-auto px-6 py-12 text-center">
+          <p className="text-body-sm text-garden-greenBright font-medium mb-2 tracking-wide uppercase">
+            Grown with Hazel
+          </p>
+          <h1 className="text-heading-lg text-garden-text mb-3">
             {profile.name}&apos;s Garden
           </h1>
-          <p className="text-body text-garden-textMuted">
-            {plantCount} {plantCount === 1 ? "plant" : "plants"} growing with
-            Hazel
-          </p>
+          <div className="flex items-center justify-center gap-6 text-body-sm text-garden-textMuted">
+            <span>
+              {plantCount} {plantCount === 1 ? "plant" : "plants"}
+            </span>
+            {spaceCount > 0 && (
+              <>
+                <span className="text-garden-border">|</span>
+                <span>
+                  {spaceCount} {spaceCount === 1 ? "space" : "spaces"}
+                </span>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
-      {/* Plant Grid */}
-      <main className="max-w-2xl mx-auto px-4 py-8">
+      <main>
         {plantCount === 0 ? (
-          <div className="text-center py-16">
-            <div className="text-5xl mb-4">🌱</div>
-            <p className="text-body text-garden-textMuted mb-6">
-              This garden is just getting started. Check back soon!
+          /* Empty garden */
+          <div className="max-w-2xl mx-auto px-4 py-20 text-center">
+            <div className="text-6xl mb-6">🌱</div>
+            <p className="text-heading-sm text-garden-text mb-2">
+              This garden is just getting started
+            </p>
+            <p className="text-body text-garden-textMuted">
+              Check back soon to see what&apos;s growing.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {(plants || []).map((plant) => {
-              const log = logsByPlant[plant.id];
-              const photoUrl = log?.cloudinary_url
-                ? thumbnail(log.cloudinary_url)
+          <div className="space-y-0">
+            {/* Space sections */}
+            {spaces.map((space) => {
+              const spacePlants = (space.plant_positions || [])
+                .map((pos) => plantMap.get(pos.plantId))
+                .filter((p): p is DbPlant => p !== undefined);
+
+              if (spacePlants.length === 0) return null;
+
+              const bgUrl = space.background_image_url
+                ? heroImage(space.background_image_url)
                 : null;
-              const plantDate = plant.created_at
-                ? new Date(plant.created_at).toLocaleDateString("en-GB", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })
-                : "";
 
               return (
-                <div
-                  key={plant.id}
-                  className="border border-garden-border rounded-xl overflow-hidden bg-white"
-                >
-                  {photoUrl ? (
-                    <div className="aspect-square bg-garden-offwhite">
+                <section key={space.id} className="relative">
+                  {/* Space header with optional background */}
+                  {bgUrl ? (
+                    <div className="relative h-48 sm:h-56 overflow-hidden">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={photoUrl}
-                        alt={plant.common_name || "Plant photo"}
+                        src={bgUrl}
+                        alt={space.name}
                         className="w-full h-full object-cover"
                       />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                      <div className="absolute bottom-0 left-0 right-0 px-6 py-5">
+                        <div className="max-w-3xl mx-auto">
+                          <h2 className="text-heading text-white flex items-center gap-3">
+                            <span>{spaceIcon(space.type)}</span>
+                            {space.name}
+                          </h2>
+                          {space.description && (
+                            <p className="text-body-sm text-white/80 mt-1">
+                              {space.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   ) : (
-                    <div className="aspect-square bg-garden-offwhite flex items-center justify-center">
-                      <span className="text-4xl">🌿</span>
+                    <div className="bg-white border-b border-garden-border px-6 py-6">
+                      <div className="max-w-3xl mx-auto">
+                        <h2 className="text-heading text-garden-text flex items-center gap-3">
+                          <span>{spaceIcon(space.type)}</span>
+                          {space.name}
+                        </h2>
+                        {space.description && (
+                          <p className="text-body-sm text-garden-textMuted mt-1">
+                            {space.description}
+                          </p>
+                        )}
+                        <p className="text-label text-garden-textMuted mt-1">
+                          {spacePlants.length}{" "}
+                          {spacePlants.length === 1 ? "plant" : "plants"} in{" "}
+                          {spaceLabel(space.type).toLowerCase()}
+                        </p>
+                      </div>
                     </div>
                   )}
-                  <div className="p-4">
-                    <h3 className="font-semibold text-garden-text text-lg">
-                      {plant.common_name || "Unknown Plant"}
-                    </h3>
-                    {plant.latin_name && (
-                      <p className="text-sm text-garden-textMuted italic">
-                        {plant.latin_name}
-                      </p>
-                    )}
-                    {plant.notes && (
-                      <p className="text-sm text-garden-textMuted mt-2 line-clamp-2">
-                        {plant.notes}
-                      </p>
-                    )}
-                    <p className="text-xs text-garden-textMuted mt-2">
-                      Added {plantDate}
-                    </p>
+
+                  {/* Plant cards grid */}
+                  <div className="max-w-3xl mx-auto px-4 py-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      {spacePlants.map((plant) => (
+                        <PlantCard
+                          key={plant.id}
+                          plant={plant}
+                          log={logsByPlant[plant.id]}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
+                </section>
               );
             })}
+
+            {/* Unassigned plants: "Around the Garden" */}
+            {unassignedPlants.length > 0 && (
+              <section>
+                <div className="bg-white border-b border-garden-border px-6 py-6">
+                  <div className="max-w-3xl mx-auto">
+                    <h2 className="text-heading text-garden-text flex items-center gap-3">
+                      <span>🌿</span>
+                      {spaces.length > 0 ? "Around the Garden" : "The Garden"}
+                    </h2>
+                    {spaces.length > 0 && (
+                      <p className="text-label text-garden-textMuted mt-1">
+                        {unassignedPlants.length}{" "}
+                        {unassignedPlants.length === 1
+                          ? "plant"
+                          : "plants"}{" "}
+                        not yet placed in a space
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="max-w-3xl mx-auto px-4 py-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {unassignedPlants.map((plant) => (
+                      <PlantCard
+                        key={plant.id}
+                        plant={plant}
+                        log={logsByPlant[plant.id]}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </section>
+            )}
           </div>
         )}
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-garden-border px-6 py-8 text-center">
-        <p className="text-sm text-garden-textMuted mb-3">
+      <footer className="border-t border-garden-border bg-white px-6 py-10 text-center">
+        <p className="text-body-sm text-garden-textMuted mb-4">
           Grown with help from Hazel
         </p>
         {whatsappNumber && (
@@ -187,12 +357,64 @@ export default async function GardenPage({ params }: GardenPageProps) {
             href={whatsappLink}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#25D366] text-white font-semibold text-sm transition-colors hover:bg-[#1da851]"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#25D366] text-white font-semibold text-body-sm transition-colors hover:bg-[#1da851]"
           >
             🌱 Start your garden with Hazel
           </a>
         )}
       </footer>
+    </div>
+  );
+}
+
+// --- Plant Card Component ---
+
+function PlantCard({
+  plant,
+  log,
+}: {
+  plant: DbPlant;
+  log?: PlantLog;
+}) {
+  const photoUrl = log?.cloudinary_url ? thumbnail(log.cloudinary_url) : null;
+  const plantDate = plant.created_at
+    ? new Date(plant.created_at).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+      })
+    : "";
+  const categoryIcon = CATEGORY_ICONS[plant.category || ""] || "";
+
+  return (
+    <div className="border border-garden-border rounded-xl overflow-hidden bg-white">
+      {photoUrl ? (
+        <div className="aspect-square bg-garden-offwhite">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={photoUrl}
+            alt={plant.common_name || "Plant photo"}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        </div>
+      ) : (
+        <div className="aspect-square bg-garden-offwhite flex items-center justify-center">
+          <span className="text-4xl">{categoryIcon || "🌿"}</span>
+        </div>
+      )}
+      <div className="p-3">
+        <h3 className="font-semibold text-garden-text text-body-sm leading-tight">
+          {plant.common_name || "Unknown Plant"}
+        </h3>
+        {plant.latin_name && (
+          <p className="text-label text-garden-textMuted italic truncate">
+            {plant.latin_name}
+          </p>
+        )}
+        {plantDate && (
+          <p className="text-label text-garden-textMuted mt-1">{plantDate}</p>
+        )}
+      </div>
     </div>
   );
 }

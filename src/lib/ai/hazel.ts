@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import type { HazelResponse, IdentifiedPlant } from "../types";
+import type { HazelResponse, IdentifiedPlant, SpaceType } from "../types";
 import type { GardenContext } from "./context";
 
 interface ImageData {
@@ -132,6 +132,11 @@ Make it relevant to what they just sent. NOT a generic question.
 ## No Repeating Yourself
 Check the conversation history. Do NOT repeat phrases, greetings, or observations you've already used. If you said "spring is on its way" earlier, don't say it again. Stay fresh. Vary your language every message.
 
+## Spaces
+When you see plants in a photo, note WHERE they are if the setting is clearly visible:
+- greenhouse, shed, windowsill, raised-bed, patio, balcony, polytunnel, allotment, front-garden, back-garden, shelf, cold-frame, garden-bed
+If you can clearly see the environment (inside a greenhouse, on a windowsill, in a shed, etc.), set detectedSpace to the matching type. If not clear or just a close-up of a plant with no visible surroundings, set detectedSpace to null. Don't guess — only set it when the setting is obvious.
+
 ## Response Format
 Respond with valid JSON only. No markdown, no code blocks:
 {
@@ -146,10 +151,12 @@ Respond with valid JSON only. No markdown, no code blocks:
       "aiNotes": "Healthy seedling, good leaf colour"
     }
   ],
-  "shouldSavePlants": true
+  "shouldSavePlants": true,
+  "detectedSpace": "greenhouse"
 }
 
 If no plants identified, set identifiedPlants to [] and shouldSavePlants to false.
+Set detectedSpace to null if you can't clearly see the environment.
 Only set shouldSavePlants to true for NEW plants not already in the garden.`;
 
 /**
@@ -176,6 +183,11 @@ export async function askHazel(input: HazelInput): Promise<HazelResponse> {
     if (gardenContext.plantCount > 0) {
       contextParts.push(
         `The user has ${gardenContext.plantCount} plants in their garden: ${gardenContext.plants.map((p) => p.commonName).join(", ")}.`
+      );
+    }
+    if (gardenContext.spaces.length > 0) {
+      contextParts.push(
+        `Garden spaces: ${gardenContext.spaces.map((s) => `${s.name} (${s.type}, ${s.plantCount} plants)`).join(", ")}.`
       );
     }
     if (gardenContext.recentLogs.length > 0) {
@@ -274,6 +286,7 @@ export async function askHazel(input: HazelInput): Promise<HazelResponse> {
       text: "Sorry, I had a moment there. Could you send that again?",
       identifiedPlants: [],
       shouldSavePlants: false,
+      detectedSpace: null,
     };
   }
 
@@ -288,12 +301,14 @@ export async function askHazel(input: HazelInput): Promise<HazelResponse> {
       text: string;
       identifiedPlants: IdentifiedPlant[];
       shouldSavePlants: boolean;
+      detectedSpace?: SpaceType | null;
     };
 
     return {
       text: parsed.text || "I seem to have lost my train of thought. Could you try again?",
       identifiedPlants: parsed.identifiedPlants || [],
       shouldSavePlants: parsed.shouldSavePlants || false,
+      detectedSpace: parsed.detectedSpace || null,
     };
   } catch {
     // If JSON parsing fails, use the raw text as the response
@@ -301,6 +316,7 @@ export async function askHazel(input: HazelInput): Promise<HazelResponse> {
       text: responseText,
       identifiedPlants: [],
       shouldSavePlants: false,
+      detectedSpace: null,
     };
   }
 }

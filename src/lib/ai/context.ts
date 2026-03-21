@@ -16,6 +16,11 @@ export interface GardenContext {
     caption: string;
     status: string;
   }>;
+  spaces: Array<{
+    name: string;
+    type: string;
+    plantCount: number;
+  }>;
   plantCount: number;
   userMessageCount: number;
   isNewUser: boolean;
@@ -48,6 +53,13 @@ export async function buildGardenContext(
     .eq("garden_id", gardenId)
     .order("date", { ascending: false })
     .limit(5);
+
+  // Fetch spaces
+  const { data: spaces } = await supabase
+    .from("spaces")
+    .select("name, type, plant_positions")
+    .eq("garden_id", gardenId)
+    .order("created_at");
 
   // Fetch last 10 messages for conversation context + count user messages
   const [{ data: messages }, { count: userMsgCount }] = await Promise.all([
@@ -92,9 +104,19 @@ export async function buildGardenContext(
       content: m.content || "",
     }));
 
+  const mappedSpaces = (spaces || []).map((s) => {
+    const positions = (s.plant_positions || []) as Array<{ plantId: string }>;
+    return {
+      name: s.name || "",
+      type: s.type || "garden-bed",
+      plantCount: positions.length,
+    };
+  });
+
   return {
     plants: mappedPlants,
     recentLogs: mappedLogs,
+    spaces: mappedSpaces,
     plantCount: mappedPlants.length,
     userMessageCount: userMsgCount || 0,
     isNewUser: mappedPlants.length === 0 && conversationHistory.length === 0,

@@ -208,7 +208,13 @@ export type SpaceType =
   | "raised-bed"
   | "polytunnel"
   | "shelf"
-  | "garden-bed";
+  | "garden-bed"
+  | "shed"
+  | "patio"
+  | "balcony"
+  | "allotment"
+  | "front-garden"
+  | "back-garden";
 
 export interface PlantPosition {
   plantId: string;
@@ -406,6 +412,7 @@ export interface HazelResponse {
   text: string;
   identifiedPlants: IdentifiedPlant[];
   shouldSavePlants: boolean;
+  detectedSpace: SpaceType | null;
 }
 
 export interface IdentifiedPlant {

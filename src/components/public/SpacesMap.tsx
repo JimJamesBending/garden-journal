@@ -21,6 +21,12 @@ function getSpaceIcon(type: string): string {
     polytunnel: "\u{26FA}",
     shelf: "\u{1F4DA}",
     "garden-bed": "\u{1F490}",
+    shed: "\u{1F6D6}",
+    patio: "\u{2600}",
+    balcony: "\u{1F3D7}",
+    allotment: "\u{1F9D1}\u{200D}\u{1F33E}",
+    "front-garden": "\u{1F3E1}",
+    "back-garden": "\u{1F3E0}",
   };
   return icons[type] || "\u{1F331}";
 }
@@ -34,6 +40,12 @@ function getSpaceLabel(type: string): string {
     polytunnel: "Polytunnel",
     shelf: "Shelf",
     "garden-bed": "Garden Bed",
+    shed: "Shed",
+    patio: "Patio",
+    balcony: "Balcony",
+    allotment: "Allotment",
+    "front-garden": "Front Garden",
+    "back-garden": "Back Garden",
   };
   return labels[type] || type;
 }
