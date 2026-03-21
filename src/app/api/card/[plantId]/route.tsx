@@ -1,5 +1,6 @@
 import { ImageResponse } from "@vercel/og";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getPlantImpact } from "@/lib/plant-impact";
 
 export const runtime = "edge";
 
@@ -113,8 +114,21 @@ export async function GET(
   };
   const category = categoryLabel[plant.category] || "Plant";
 
+  // Get ecological impact data
+  const validCategory = (["flower", "herb", "vegetable", "fruit"].includes(plant.category)
+    ? plant.category
+    : "flower") as "flower" | "herb" | "vegetable" | "fruit";
+  const impact = getPlantImpact(
+    plant.common_name,
+    plant.latin_name || "",
+    validCategory,
+    "outdoor",
+    days
+  );
+
   // Build the text that needs the serif font (for subset loading)
-  const serifText = `${plant.common_name || "Plant"}${plant.latin_name || ""}${category}Hazel`;
+  const impactText = impact.primaryStats.map((s) => s.label).join("");
+  const serifText = `${plant.common_name || "Plant"}${plant.latin_name || ""}${category}Hazel${impact.impactGrade}${impactText}`;
 
   // Load Playfair Display (beautiful editorial serif)
   const [playfairRegular, playfairBold, playfairItalic] = await Promise.all([
@@ -264,7 +278,7 @@ export async function GET(
             </span>
           )}
 
-          {/* Bottom row: category + age */}
+          {/* Bottom row: category + impact stats + age */}
           <div
             style={{
               display: "flex",
@@ -294,6 +308,84 @@ export async function GET(
               >
                 {category}
               </span>
+            </div>
+
+            {/* Impact stats — two pill badges + grade */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              {/* Stat 1 */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  background: "rgba(255,255,255,0.12)",
+                  borderRadius: 20,
+                  padding: "4px 10px",
+                }}
+              >
+                <span style={{ fontSize: 12 }}>{impact.primaryStats[0].emoji}</span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: "rgba(255,255,255,0.7)",
+                    fontFamily: "Playfair Display",
+                    fontWeight: 400,
+                  }}
+                >
+                  {impact.primaryStats[0].label}
+                </span>
+              </div>
+              {/* Stat 2 */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  background: "rgba(255,255,255,0.12)",
+                  borderRadius: 20,
+                  padding: "4px 10px",
+                }}
+              >
+                <span style={{ fontSize: 12 }}>{impact.primaryStats[1].emoji}</span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: "rgba(255,255,255,0.7)",
+                    fontFamily: "Playfair Display",
+                    fontWeight: 400,
+                  }}
+                >
+                  {impact.primaryStats[1].label}
+                </span>
+              </div>
+              {/* Impact grade badge */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  background: "rgba(76,175,80,0.25)",
+                  borderRadius: 20,
+                  padding: "4px 10px",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: "rgba(255,255,255,0.8)",
+                    fontFamily: "Playfair Display",
+                    fontWeight: 700,
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  {impact.impactGrade}
+                </span>
+              </div>
             </div>
 
             {/* Age */}
