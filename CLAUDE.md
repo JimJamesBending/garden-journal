@@ -43,7 +43,7 @@ This is the core product flow. Every design decision serves this sequence:
 | AI | Gemini 2.5 Flash (`gemini-2.5-flash`) | Via `@google/genai` SDK. Vision + text. |
 | Database | Supabase (Postgres + Auth + RLS) | Admin client bypasses RLS for webhook |
 | Images | Cloudinary | Unsigned upload preset `garden_log`, cloud `davterbwx` |
-| Messaging | WhatsApp Business Cloud API (v21.0) | Via Meta Graph API |
+| Messaging | WhatsApp Business Cloud API (v23.0) | Via Meta Graph API |
 | Cards | `@vercel/og` (Satori/ImageResponse) | Dynamic plant card image generation |
 | Async | `waitUntil` from `@vercel/functions` | Webhook returns 200 immediately, processes async |
 
@@ -78,11 +78,14 @@ src/
     api/
       webhooks/whatsapp/route.ts  — THE core file. Webhook handler.
       card/[plantId]/route.tsx    — Dynamic plant card image generation (800x500)
-    g/[slug]/page.tsx             — Public garden journal page
+      admin/                      — Admin API routes (stats, users, conversations, plants, analytics, health)
+      health/route.ts             — Public health check endpoint
+    admin/                        — Admin dashboard (layout, overview, users, conversations, plants, diagnostics, analytics)
+    g/[slug]/page.tsx             — Public garden page (organized by spaces)
   lib/
     ai/
       hazel.ts                    — System prompt + askHazel() Gemini call
-      context.ts                  — Builds garden context for Gemini
+      context.ts                  — Builds garden context (plants, spaces, logs) for Gemini
     channels/
       whatsapp.ts                 — WhatsApp API: send text/image, markReadAndType, download media
       resolve-user.ts             — Find or create user from phone number
@@ -90,24 +93,33 @@ src/
       image-batcher.ts            — Postgres-backed batch queue for multi-image handling
     supabase/
       admin.ts                    — Supabase admin client (bypasses RLS)
-      queries.ts                  — All database queries (createPlant, createLog, etc.)
+      queries.ts                  — All database queries (createPlant, createLog, createSpace, etc.)
+    webhook-verify.ts             — HMAC-SHA256 signature verification for WhatsApp webhook
     cloudinary.ts                 — URL transform helpers
     plant-impact.ts               — Ecological impact lookup (35 plants, grades, season/age scaling)
+    debug-log.ts                  — Structured debug logging to Supabase
     types.ts                      — TypeScript interfaces
+  components/
+    admin/                        — Admin UI components (Sidebar, StatCard, DataTable, etc.)
+    public/
+      SpacesMap.tsx               — Interactive space map with plant pins
 scripts/
   wipe-user.sh                    — Wipe user data for testing
 ```
 
 ### Database Schema (Supabase)
 ```
-profiles        — id, email, name, phone, public_slug, plan
+profiles        — id, email, name, phone, public_slug, plan, is_admin, journal_revealed
 gardens         — id, owner_id, name, lat, lng
 plants          — id, garden_id, slug, common_name, latin_name, category, variety, confidence, sow_date, location, notes
 log_entries     — id, garden_id, plant_id, date, cloudinary_url, caption, status, labeled
-messages        — id, conversation_id, role, content, media_urls
-conversations   — id, profile_id, channel, channel_user_id
+messages        — id, conversation_id, role, content, media_urls, metadata (jsonb)
+conversations   — id, profile_id, channel, channel_user_id, last_message_at
+spaces          — id, garden_id, name, type, description, background_image_url, plant_positions (jsonb)
 care_events     — id, garden_id, plant_id, type, date, notes, quantity
 growth_entries  — id, garden_id, plant_id, date, height_cm, leaf_count, health_score, notes
+pending_images  — id, phone, profile_name, whatsapp_message_id, media_id, mime_type, caption
+debug_logs      — id, event, data (jsonb), created_at
 ```
 
 Auto-creation chain: WhatsApp message -> auth user -> profile (trigger) -> garden (trigger) -> conversation
@@ -197,10 +209,13 @@ GEMINI_API_KEY
 WHATSAPP_ACCESS_TOKEN          — Permanent system user token
 WHATSAPP_PHONE_NUMBER_ID       — 1017579654776008
 WHATSAPP_VERIFY_TOKEN          — hazel_garden_2026
+WHATSAPP_APP_SECRET            — For webhook signature verification (HMAC-SHA256)
+APP_URL                        — e.g. https://garden-project-theta.vercel.app
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY
 NEXT_PUBLIC_HAZEL_PHONE_NUMBER
+CLOUDINARY_URL                 — Full cloudinary URL for uploads
 ```
 
 ---
@@ -249,7 +264,7 @@ git add . && git commit -m "message" && git push origin master
 - [ ] Proactive messages — seasonal tips, care reminders (requires Meta template approval)
 
 ### Feature Ideas (User-Requested / To Be Offered)
-- [ ] **Spaces** — Gardens are made of spaces: shed, greenhouse, windowsill, raised bed, border, etc. Indoor and outdoor. Use spaces to create collections for richer context. "Homes are basically gardens — outside and inside." When user mentions a shed or windowsill, that's a space.
+- [x] **Spaces** — Gardens are made of spaces: shed, greenhouse, windowsill, raised bed, border, etc. Hazel auto-detects spaces from photos and assigns plants to them. Public garden page organized by spaces.
 - [ ] **Bulk adding** — Once user is hooked, entice with bulk plant adding (e.g. "Send me all your plants!")
 - [ ] Space planning — help users plan what to plant where in their garden/greenhouse
 - [ ] Yield calculations — estimate harvest yields based on plant count, variety, conditions
@@ -262,6 +277,18 @@ git add . && git commit -m "message" && git push origin master
 
 ### Technical Notes
 - Gemini thinking uses split config: image messages get `thinkingBudget: 1024` (plant ID needs reasoning), text-only messages get `thinkingBudget: 0` (speed over reasoning for chat)
+
+---
+
+## QA Rules
+
+- After every deploy, visually verify the live URL using browser tools
+- Check /api/debug/logs for typing indicator status after WhatsApp interactions
+- Test public garden page (/g/[slug]) in browser after plant/space changes
+- Test admin dashboard pages load with real data
+- Never declare a feature "done" without visual confirmation
+- Run `npx tsc --noEmit` after code changes to catch type errors before committing
+- Check /api/health endpoint after deploy to verify all services are connected
 
 ---
 

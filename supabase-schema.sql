@@ -17,6 +17,7 @@ create table public.profiles (
   public_slug text unique,
   journal_revealed boolean default false,
   plan text default 'free' check (plan in ('free', 'grower', 'pro')),
+  is_admin boolean default false,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -490,3 +491,14 @@ begin
   return true;
 end;
 $$;
+
+-- ============================================
+-- ADMIN DASHBOARD MIGRATION
+-- Run this after initial setup to add admin support
+-- ============================================
+
+-- Add is_admin column (run once)
+-- ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_admin boolean DEFAULT false;
+
+-- Set your own profile as admin (replace with your email):
+-- UPDATE public.profiles SET is_admin = true WHERE email = 'your@email.com';
