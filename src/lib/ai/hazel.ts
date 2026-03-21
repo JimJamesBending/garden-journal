@@ -2,9 +2,15 @@ import { GoogleGenAI } from "@google/genai";
 import type { HazelResponse, IdentifiedPlant } from "../types";
 import type { GardenContext } from "./context";
 
+interface ImageData {
+  base64: string;
+  mimeType: string;
+}
+
 interface HazelInput {
   userMessage: string;
   imageUrls?: string[];
+  imageData?: ImageData[];
   gardenContext: GardenContext;
 }
 
@@ -112,7 +118,7 @@ Only set shouldSavePlants to true for NEW plants not already in the garden.`;
  * Returns her response text and any identified plants.
  */
 export async function askHazel(input: HazelInput): Promise<HazelResponse> {
-  const { userMessage, imageUrls, gardenContext } = input;
+  const { userMessage, imageUrls, imageData, gardenContext } = input;
 
   if (!process.env.GEMINI_API_KEY) {
     throw new Error("Missing GEMINI_API_KEY");
@@ -153,8 +159,17 @@ export async function askHazel(input: HazelInput): Promise<HazelResponse> {
   // Build content parts for the API call
   const contentParts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [];
 
-  // Add images if provided
-  if (imageUrls && imageUrls.length > 0) {
+  // Add images — prefer pre-converted imageData (skips re-download)
+  if (imageData && imageData.length > 0) {
+    for (const img of imageData) {
+      contentParts.push({
+        inlineData: {
+          mimeType: img.mimeType,
+          data: img.base64,
+        },
+      });
+    }
+  } else if (imageUrls && imageUrls.length > 0) {
     const imageContents = await Promise.all(
       imageUrls.map(async (url) => {
         const res = await fetch(url);

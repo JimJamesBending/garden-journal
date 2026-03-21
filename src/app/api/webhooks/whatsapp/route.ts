@@ -138,6 +138,7 @@ async function processMessage(
     // 2. Extract text and media
     let textContent = "";
     const imageUrls: string[] = [];
+    const rawImageData: { base64: string; mimeType: string }[] = [];
 
     if (message.type === "text" && message.text) {
       textContent = message.text.body;
@@ -154,6 +155,13 @@ async function processMessage(
 
       try {
         const { buffer, mimeType } = await downloadMedia(message.image.id);
+
+        // Keep raw buffer for Gemini (skip re-download) + upload to Cloudinary in parallel
+        rawImageData.push({
+          base64: buffer.toString("base64"),
+          mimeType,
+        });
+
         const cloudinaryUrl = await uploadToCloudinary(buffer, mimeType);
         imageUrls.push(cloudinaryUrl);
       } catch (mediaErr) {
@@ -194,7 +202,7 @@ async function processMessage(
     try {
       hazelResponse = await askHazel({
         userMessage: textContent,
-        imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
+        imageData: rawImageData.length > 0 ? rawImageData : undefined,
         gardenContext: context,
       });
       console.log("[HAZEL] Step 5 done: length =", hazelResponse.text.length);
